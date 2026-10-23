@@ -164,6 +164,27 @@ private slots:
         QCOMPARE(read(path), QByteArray("{ not json"));
     }
 
+    // QML can't call a method whose parameter types it doesn't know; it fails
+    // at the call ("Unknown method parameter type"), not at load.
+    void invokablesTakeTypesQmlKnows()
+    {
+        Settings settings(QDir::tempPath() + "/talkback-unused.conf");
+        Voices voices(QDir::tempPath() + "/talkback-no-voices", QDir::tempPath() + "/talkback-no-cache.json");
+        Dictation dictation("true");
+        Speaker speaker(QDir::tempPath() + "/talkback-no-claude.json");
+        for (const QObject *object : std::initializer_list<const QObject *>{&settings, &voices, &dictation, &speaker}) {
+            const QMetaObject *meta = object->metaObject();
+            for (int i = meta->methodOffset(); i < meta->methodCount(); ++i) {
+                const QMetaMethod method = meta->method(i);
+                if (method.methodType() != QMetaMethod::Method)
+                    continue;
+                for (int p = 0; p < method.parameterCount(); ++p)
+                    QVERIFY2(method.parameterMetaType(p).isValid(),
+                             qPrintable(QString("%1::%2").arg(meta->className(), method.methodSignature())));
+            }
+        }
+    }
+
     void themeFallsBack()
     {
         QTemporaryDir dir;

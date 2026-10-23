@@ -23,7 +23,8 @@ public:
     QString error() const { return m_error; }
 
     // Speaks with `settings` but the given voice, so any voice can be previewed.
-    Q_INVOKABLE void say(const QString &text, const QString &voice, Settings *settings);
+    // QML only passes types it knows, so the settings arrive as a QObject.
+    Q_INVOKABLE void say(const QString &text, const QString &voice, QObject *settings);
     static QStringList sayArguments(const QString &text, const QString &voice, const Settings &settings);
     Q_INVOKABLE void stop();
     Q_INVOKABLE bool installHook();

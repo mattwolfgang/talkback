@@ -42,7 +42,8 @@ QStringList Speaker::sayArguments(const QString &text, const QString &voice, con
             "--pause", number(settings.pause())};
 }
 
-void Speaker::say(const QString &text, const QString &voice, Settings *settings) {
+void Speaker::say(const QString &text, const QString &voice, QObject *object) {
+    const auto *settings = qobject_cast<Settings *>(object);
     if (text.trimmed().isEmpty() || !settings)
         return;
     const bool started = QProcess::startDetached(speakCommand(), sayArguments(text, voice, *settings));
