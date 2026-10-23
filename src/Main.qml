@@ -287,7 +287,7 @@ ApplicationWindow {
                 ToggleCard {
                     heading: qsTr("Spoken replies")
                     detail: qsTr("Read Claude's replies aloud when they finish.")
-                    keys: qsTr("S here · Super + Alt + X anywhere")
+                    keys: qsTr("S here · Super + Alt + X anywhere · Super + Alt + Esc stops a reply")
                     on: settings.enabled
                     note: speaker.error
                     onToggled: on => settings.enabled = on
@@ -696,7 +696,8 @@ ApplicationWindow {
                                 ["Esc", qsTr("Stop speaking")],
                                 ["?", qsTr("Show or hide this list")],
                                 ["Q", qsTr("Quit")],
-                                ["Super + Alt + X", qsTr("Spoken replies, from anywhere")]
+                                ["Super + Alt + X", qsTr("Spoken replies, from anywhere")],
+                                ["Super + Alt + Esc", qsTr("Stop speaking, from anywhere")]
                             ]
                             delegate: RowLayout {
                                 required property var modelData

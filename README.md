@@ -51,6 +51,14 @@ Settings live in `~/.config/talkback/settings.conf` and voices in
 | `?` | Show every shortcut |
 | `Q` | Quit |
 
+Two Hyprland keybindings work from anywhere (add them to
+`~/.config/hypr/bindings.lua`):
+
+```lua
+o.bind("SUPER + ALT + X", "Toggle spoken replies", "talkback speech toggle --notify")
+o.bind("SUPER + ALT + ESCAPE", "Stop speaking", "talkback-speak --stop")
+```
+
 ## Commands
 
 ```text
