@@ -1,0 +1,25 @@
+pkgname=talkback
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='Pick the Piper voice that reads Claude replies aloud, and switch spoken replies and dictation'
+arch=('x86_64' 'aarch64')
+license=('MIT')
+depends=('qt6-base' 'qt6-declarative' 'qt6-wayland' 'piper-tts' 'python' 'jq' 'alsa-utils' 'libnotify')
+optdepends=('voxtype-bin: dictation')
+makedepends=('gcc' 'make')
+source=()
+sha256sums=()
+
+build() {
+  cd "$startdir/.."
+  ./bin/build
+}
+
+package() {
+  cd "$startdir/.."
+  install -Dm755 build/talkback "$pkgdir/usr/bin/talkback"
+  install -Dm755 bin/talkback-speak "$pkgdir/usr/bin/talkback-speak"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 "$startdir/talkback.svg" "$pkgdir/usr/share/icons/hicolor/scalable/apps/talkback.svg"
+  install -Dm644 "$startdir/talkback.desktop" "$pkgdir/usr/share/applications/talkback.desktop"
+}

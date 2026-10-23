@@ -1,0 +1,90 @@
+#!/bin/bash
+# Speaks text with Piper. Claude Code runs it as a Stop hook (the hook's JSON
+# arrives on stdin); Talkback runs it to preview voices.
+#
+#   talkback-speak                         read Claude's last reply, if turned on
+#   talkback-speak --say TEXT [--voice NAME] [--speed N]
+#   talkback-speak --stop                  stop whatever is playing
+
+config="${XDG_CONFIG_HOME:-$HOME/.config}/talkback/settings.conf"
+voices="${XDG_DATA_HOME:-$HOME/.local/share}/piper-voices"
+pidfile="${XDG_RUNTIME_DIR:-/tmp}/talkback-speak.pid"
+
+setting() {
+  sed -n "s/^$1=//p" "$config" 2>/dev/null | tail -n1
+}
+
+stop_speaking() {
+  if [[ -f $pidfile ]]; then
+    kill -- -"$(cat "$pidfile")" 2>/dev/null
+    rm -f "$pidfile"
+  fi
+}
+
+voice=$(setting voice)
+speed=$(setting speed)
+text=
+
+while (($#)); do
+  case $1 in
+    --stop) stop_speaking; exit 0 ;;
+    --say) text=$2; shift ;;
+    --voice) voice=$2; shift ;;
+    --speed) speed=$2; shift ;;
+    *) echo "Unknown option: $1" >&2; exit 1 ;;
+  esac
+  shift
+done
+
+if [[ -z $text ]]; then
+  # Called as the hook: stay quiet unless spoken replies are on.
+  [[ $(setting enabled) == false ]] && exit 0
+
+  input=$(cat)
+  [[ $(jq -r '.stop_hook_active // false' <<<"$input") == true ]] && exit 0
+
+  text=$(jq -r '.last_assistant_message // empty' <<<"$input")
+  if [[ -z $text ]]; then
+    # Older Claude Code: pull the last assistant text from the transcript.
+    transcript=$(jq -r '.transcript_path // empty' <<<"$input")
+    [[ -f $transcript ]] || exit 0
+    text=$(jq -rs '
+      map(select(.type == "assistant")) | last | .message.content
+      | if type == "array" then map(select(.type == "text") | .text) | join("\n") else . end
+    ' "$transcript")
+  fi
+  [[ -z $text || $text == null ]] && exit 0
+
+  # Turn markdown into something worth hearing: drop code blocks and tables,
+  # keep link text, strip formatting characters.
+  text=$(sed -E '
+    /^```/,/^```/d
+    /^\s*\|/d
+    s/\[([^]]*)\]\([^)]*\)/\1/g
+    s/`([^`]*)`/\1/g
+    s/^#+\s*//
+    s/^\s*[-*]\s+//
+    s/^\s*[0-9]+\.\s+//
+    s/[*_~]{1,3}//g
+    s#https?://[^ ]+#a link#g
+  ' <<<"$text")
+fi
+
+voice=${voice:-en_US-lessac-medium}
+model="$voices/$voice.onnx"
+if [[ ! -f $model ]]; then
+  echo "Voice not installed: $voice" >&2
+  exit 1
+fi
+
+# Piper takes a phoneme length, so a faster speed is a shorter length.
+length=$(awk -v s="${speed:-1}" 'BEGIN { if (s <= 0) s = 1; printf "%.3f", 1 / s }')
+rate=$(jq -r '.audio.sample_rate // 22050' "$model.json" 2>/dev/null)
+
+stop_speaking
+setsid bash -c '
+  piper-tts -m "$1" --length-scale "$2" --output-raw 2>/dev/null | aplay -q -r "$3" -f S16_LE -c 1 -t raw
+  rm -f "$4"
+' _ "$model" "$length" "${rate:-22050}" "$pidfile" <<<"$text" >/dev/null 2>&1 &
+echo $! >"$pidfile"
+exit 0

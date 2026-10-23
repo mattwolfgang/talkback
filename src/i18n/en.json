@@ -1,0 +1,5 @@
+{
+  "%n voices": { "one": "%n voice", "other": "%n voices" },
+  "%n downloaded": { "one": "%n downloaded", "other": "%n downloaded" },
+  "%n speakers (plays the first)": { "one": "%n speaker", "other": "%n speakers (plays the first)" }
+}

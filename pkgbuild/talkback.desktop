@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Talkback
+Comment=Choose the voice that reads Claude's replies aloud
+Exec=talkback open
+Icon=talkback
+Terminal=false
+Categories=Utility;Accessibility;
+Keywords=voice;speech;tts;piper;dictation;claude;
+StartupWMClass=talkback
