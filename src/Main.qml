@@ -228,7 +228,7 @@ ApplicationWindow {
                 ToggleCard {
                     heading: qsTr("Dictation")
                     detail: qsTr("Let Voxtype listen for the dictation keys (F9, Right Alt, Super + Ctrl + X).")
-                    keys: qsTr("V here · Super + Ctrl + Alt + X anywhere")
+                    keys: qsTr("V here")
                     on: dictation.active
                     canToggle: dictation.available && !dictation.busy
                     note: !dictation.available ? qsTr("Voxtype isn't set up. Pick it under Setup > Defaults > Dictation.")
@@ -508,8 +508,7 @@ ApplicationWindow {
                                 ["Esc", qsTr("Stop speaking")],
                                 ["?", qsTr("Show or hide this list")],
                                 ["Q", qsTr("Quit")],
-                                ["Super + Alt + X", qsTr("Spoken replies, from anywhere")],
-                                ["Super + Ctrl + Alt + X", qsTr("Dictation, from anywhere")]
+                                ["Super + Alt + X", qsTr("Spoken replies, from anywhere")]
                             ]
                             delegate: RowLayout {
                                 required property var modelData
