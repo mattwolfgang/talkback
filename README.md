@@ -61,3 +61,14 @@ talkback hook install
 
 Needs `piper-tts` (AUR) and, for dictation, Voxtype set up under Omarchy's
 Setup > Defaults > Dictation.
+
+## Credits
+
+The theme and language handling (`src/theme.cpp`, `src/translator.cpp`)
+follow [Omacut](https://github.com/omacom-io/omacut) and
+[Monologue](https://github.com/omacom/monologue), MIT licensed,
+Copyright (c) David Heinemeier Hansson.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
