@@ -1,14 +1,15 @@
 #!/bin/bash
-# Speaks text with Piper. Claude Code runs it as a Stop hook (the hook's JSON
+# Speaks text with Piper or Kokoro. Claude Code runs it as a Stop hook (the hook's JSON
 # arrives on stdin); Talkback runs it to preview voices.
 #
 #   talkback-speak                         read Claude's last reply, if turned on
-#   talkback-speak --say TEXT [--voice NAME] [--speed N] [--expression N]
-#                  [--rhythm N] [--pause SECONDS] [--speaker N]
+#   talkback-speak --say TEXT [--engine piper|kokoro] [--voice NAME] [--speed N]
+#                  [--expression N] [--rhythm N] [--pause SECONDS] [--speaker N]
 #   talkback-speak --stop                  stop whatever is playing
 
 config="${XDG_CONFIG_HOME:-$HOME/.config}/talkback/settings.conf"
 voices="${XDG_DATA_HOME:-$HOME/.local/share}/piper-voices"
+kokoro="${XDG_DATA_HOME:-$HOME/.local/share}/talkback/kokoro"
 pidfile="${XDG_RUNTIME_DIR:-/tmp}/talkback-speak.pid"
 
 setting() {
@@ -22,7 +23,8 @@ stop_speaking() {
   fi
 }
 
-voice=$(setting voice)
+engine=$(setting engine)
+voice=
 speed=$(setting speed)
 expression=$(setting expression)
 rhythm=$(setting rhythm)
@@ -34,6 +36,7 @@ while (($#)); do
   case $1 in
     --stop) stop_speaking; exit 0 ;;
     --say) text=$2; shift ;;
+    --engine) engine=$2; shift ;;
     --voice) voice=$2; shift ;;
     --speed) speed=$2; shift ;;
     --expression) expression=$2; shift ;;
@@ -65,12 +68,31 @@ if [[ -z $text ]]; then
   [[ -z $text || $text == null ]] && exit 0
 fi
 
-# Markdown and symbols become plain sentences on one line, the only place
-# Piper pauses between them.
+# Markdown and symbols become plain sentences on one line: the only place
+# Piper pauses between them, and what Kokoro splits into sentences.
 here=$(dirname "$(readlink -f "$0")")
 text=$("$here/talkback-speech-text" <<<"$text")
 [[ -z $text ]] && exit 0
 
+stop_speaking
+
+if [[ $engine == kokoro ]]; then
+  voice=${voice:-$(setting kokoroVoice)}
+  voice=${voice:-af_heart}
+  if [[ ! -x $kokoro/venv/bin/python ]]; then
+    echo "Kokoro isn't installed. Run talkback-kokoro-setup or install it in Talkback." >&2
+    exit 1
+  fi
+  setsid bash -c '
+    "$1" -I "$2" --voice "$3" --speed "$4" --pause "$5" 2>/dev/null | aplay -q -r 24000 -f S16_LE -c 1 -t raw
+    rm -f "$6"
+  ' _ "$kokoro/venv/bin/python" "$here/talkback-kokoro" "$voice" "${speed:-1}" "${pause:-0.3}" "$pidfile" \
+    <<<"$text" >/dev/null 2>&1 &
+  echo $! >"$pidfile"
+  exit 0
+fi
+
+voice=${voice:-$(setting voice)}
 voice=${voice:-en_US-lessac-medium}
 # Voices trained on many people pick one by number; the window saves a
 # choice per voice.
@@ -85,7 +107,6 @@ fi
 length=$(awk -v s="${speed:-1}" 'BEGIN { if (s <= 0) s = 1; printf "%.3f", 1 / s }')
 rate=$(jq -r '.audio.sample_rate // 22050' "$model.json" 2>/dev/null)
 
-stop_speaking
 setsid bash -c '
   piper-tts -m "$1" --length-scale "$2" --noise-scale "$3" --noise-w-scale "$4" --sentence-silence "$5" \
     --speaker "$6" --output-raw 2>/dev/null | aplay -q -r "$7" -f S16_LE -c 1 -t raw

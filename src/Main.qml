@@ -25,38 +25,59 @@ ApplicationWindow {
     property bool helpVisible: false
     // Single-letter shortcuts stand aside while a text field has the keys.
     readonly property bool typing: activeFocusItem !== null && activeFocusItem.hasOwnProperty("cursorPosition")
-    readonly property var selected: list.currentIndex >= 0 && list.currentIndex < voices.voices.length
-                                    ? voices.voices[list.currentIndex] : null
+    readonly property bool kokoroMode: settings.engine === "kokoro"
+    readonly property string currentVoiceKey: kokoroMode ? settings.kokoroVoice : settings.voice
+    readonly property var listModel: kokoroMode ? kokoro.voices : voices.voices
+    readonly property var selected: list.currentIndex >= 0 && list.currentIndex < listModel.length
+                                    ? listModel[list.currentIndex] : null
     readonly property string sample: sampleField.text.length > 0 ? sampleField.text : sampleField.placeholderText
-    readonly property var current: { voices.voices; return voices.voice(settings.voice) }
+    readonly property var current: {
+        voices.voices
+        kokoro.voices
+        return kokoroMode ? kokoro.voice(settings.kokoroVoice) : voices.voice(settings.voice)
+    }
 
     function describe(voice) {
         if (!voice || !voice.key)
-            return settings.voice
+            return win.currentVoiceKey
         const place = voice.country ? qsTr("%1 (%2)").arg(voice.language).arg(voice.country) : voice.language
         return qsTr("%1 · %2").arg(place).arg(voice.name)
     }
 
     function preview(key) {
-        if (voices.isInstalled(key))
-            speaker.say(win.sample, key, settings)
+        if (win.kokoroMode) {
+            if (kokoro.installed)
+                speaker.say(win.sample, "kokoro", key, settings)
+        } else if (voices.isInstalled(key)) {
+            speaker.say(win.sample, "piper", key, settings)
+        }
     }
 
     function previewSelected() {
-        preview(win.selected && win.selected.installed ? win.selected.key : settings.voice)
+        preview(win.selected && win.selected.installed ? win.selected.key : win.currentVoiceKey)
+    }
+
+    function switchEngine() {
+        if (win.kokoroMode)
+            settings.engine = "piper"
+        else
+            settings.engine = "kokoro"
+        list.currentIndex = 0
     }
 
     function activate(voice) {
         if (!voice)
             return
-        if (voice.installed)
+        if (voice.engine === "kokoro")
+            settings.kokoroVoice = voice.key
+        else if (voice.installed)
             settings.voice = voice.key
         else
             voices.download(voice.key)
     }
 
     function askRemove(voice) {
-        if (voice && voice.installed && voice.key !== settings.voice) {
+        if (voice && voice.installed && voice.engine !== "kokoro" && voice.key !== settings.voice) {
             removeDialog.key = voice.key
             removeDialog.open()
         }
@@ -99,6 +120,7 @@ ApplicationWindow {
     Shortcut { sequence: "Delete"; enabled: !win.typing; context: Qt.ApplicationShortcut; onActivated: win.askRemove(win.selected) }
     Shortcut { sequence: "S"; enabled: !win.typing; context: Qt.ApplicationShortcut; onActivated: settings.enabled = !settings.enabled }
     Shortcut { sequence: "V"; enabled: !win.typing; context: Qt.ApplicationShortcut; onActivated: dictation.setActive(!dictation.active) }
+    Shortcut { sequence: "E"; enabled: !win.typing; context: Qt.ApplicationShortcut; onActivated: win.switchEngine() }
     Shortcut { sequence: "I"; enabled: !win.typing; context: Qt.ApplicationShortcut; onActivated: voices.installedOnly = !voices.installedOnly }
     Shortcut { sequences: ["+", "="]; enabled: !win.typing; context: Qt.ApplicationShortcut; onActivated: win.nudgeSpeed(0.05) }
     Shortcut { sequence: "-"; enabled: !win.typing; context: Qt.ApplicationShortcut; onActivated: win.nudgeSpeed(-0.05) }
@@ -316,8 +338,25 @@ ApplicationWindow {
                             color: Material.accentColor
                         }
                     }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: 10
+                        Label { text: qsTr("Engine"); Layout.preferredWidth: 130 }
+                        TabBar {
+                            id: engineBar
+                            currentIndex: win.kokoroMode ? 1 : 0
+                            Material.roundedScale: theme.radius
+                            TabButton { text: "Piper"; width: implicitWidth + 24; onClicked: if (win.kokoroMode) win.switchEngine() }
+                            TabButton { text: "Kokoro"; width: implicitWidth + 24; onClicked: if (!win.kokoroMode) win.switchEngine() }
+                        }
+                        Hint {
+                            Layout.fillWidth: true
+                            text: win.kokoroMode ? qsTr("More natural; about a second to start. E switches.")
+                                                 : qsTr("Fast and light, with hundreds of voices. E switches.")
+                        }
+                    }
                     Hint {
-                        visible: voices.installedCount >= 0 && !voices.isInstalled(settings.voice) && !voices.loading
+                        visible: !win.kokoroMode && voices.installedCount >= 0 && !voices.isInstalled(settings.voice) && !voices.loading
                         text: qsTr("%1 isn't downloaded, so replies stay silent. Pick a downloaded voice below.").arg(settings.voice)
                         color: win.warningColor
                     }
@@ -355,6 +394,7 @@ ApplicationWindow {
                         onMoved: value => settings.speed = value
                     }
                     SettingSlider {
+                        visible: !win.kokoroMode
                         label: qsTr("Expression")
                         tip: qsTr("How much the pitch and tone vary. Higher sounds livelier; too high gets wobbly.")
                         from: 0
@@ -364,6 +404,7 @@ ApplicationWindow {
                         onMoved: value => settings.expression = value
                     }
                     SettingSlider {
+                        visible: !win.kokoroMode
                         label: qsTr("Rhythm")
                         tip: qsTr("How much the length of each sound varies. Higher sounds less mechanical; too high stumbles.")
                         from: 0
@@ -397,11 +438,13 @@ ApplicationWindow {
                             Material.background: Material.accentColor
                             Material.foreground: theme.accentForeground
                             Material.roundedScale: theme.radius
-                            enabled: voices.installedCount >= 0 && voices.isInstalled(settings.voice)
+                            enabled: win.kokoroMode ? kokoro.installed
+                                                    : voices.installedCount >= 0 && voices.isInstalled(settings.voice)
                             onClicked: win.preview(settings.voice)
                         }
                         AppButton { text: qsTr("Stop"); flat: true; onClicked: speaker.stop() }
                         AppButton {
+                            visible: !win.kokoroMode
                             text: qsTr("Reset")
                             flat: true
                             onClicked: settings.resetNaturalness()
@@ -420,11 +463,15 @@ ApplicationWindow {
                     id: searchField
                     Layout.fillWidth: true
                     placeholderText: qsTr("Search voices by language, name or quality")
-                    onTextChanged: voices.filter = text
+                    onTextChanged: {
+                        voices.filter = text
+                        kokoro.filter = text
+                    }
                     Keys.onUpPressed: list.decrementCurrentIndex()
                     Keys.onDownPressed: list.incrementCurrentIndex()
                 }
                 CheckBox {
+                    visible: !win.kokoroMode
                     text: qsTr("Downloaded only")
                     checked: voices.installedOnly
                     onToggled: voices.installedOnly = checked
@@ -442,7 +489,7 @@ ApplicationWindow {
                     anchors.margins: 1
                     focus: true
                     clip: true
-                    model: voices.voices
+                    model: win.listModel
                     keyNavigationEnabled: true
                     highlightMoveDuration: 0
                     boundsBehavior: Flickable.StopAtBounds
@@ -452,7 +499,7 @@ ApplicationWindow {
                         id: row
                         required property var modelData
                         required property int index
-                        readonly property bool inUse: modelData.key === settings.voice
+                        readonly property bool inUse: modelData.key === win.currentVoiceKey
                         readonly property bool downloadingThis: voices.downloading === modelData.key
                         width: ListView.view.width
                         height: 58
@@ -524,10 +571,10 @@ ApplicationWindow {
                                 id: useButton
                                 visible: row.modelData.installed && !row.inUse
                                 text: qsTr("Use")
-                                onClicked: settings.voice = row.modelData.key
+                                onClicked: win.activate(row.modelData)
                             }
                             AppButton {
-                                visible: row.modelData.installed && !row.inUse
+                                visible: row.modelData.installed && !row.inUse && row.modelData.engine !== "kokoro"
                                 text: qsTr("Remove")
                                 flat: true
                                 onClicked: win.askRemove(row.modelData)
@@ -554,9 +601,36 @@ ApplicationWindow {
                         }
                     }
 
+                    ColumnLayout {
+                        anchors.centerIn: parent
+                        width: Math.min(parent.width - 40, 460)
+                        visible: win.kokoroMode && !kokoro.installed
+                        spacing: 12
+                        Label {
+                            Layout.fillWidth: true
+                            wrapMode: Text.WordWrap
+                            horizontalAlignment: Text.AlignHCenter
+                            text: qsTr("Kokoro isn't installed yet. It needs about 350 MB: the kokoro-onnx Python package and its model and voices.")
+                        }
+                        AppButton {
+                            Layout.alignment: Qt.AlignHCenter
+                            visible: !kokoro.installing
+                            text: qsTr("Install Kokoro")
+                            Material.background: Material.accentColor
+                            Material.foreground: theme.accentForeground
+                            onClicked: kokoro.install()
+                        }
+                        RowLayout {
+                            Layout.alignment: Qt.AlignHCenter
+                            visible: kokoro.installing
+                            BusyIndicator { running: parent.visible; Layout.preferredWidth: 28; Layout.preferredHeight: 28 }
+                            Hint { Layout.fillWidth: false; text: kokoro.progress }
+                        }
+                    }
+
                     Label {
                         anchors.centerIn: parent
-                        visible: list.count === 0
+                        visible: list.count === 0 && !(win.kokoroMode && !kokoro.installed)
                         color: win.mutedColor
                         text: voices.loading ? qsTr("Loading Piper's voice list…")
                             : searchField.text.length > 0 ? qsTr("No voices match “%1”.").arg(searchField.text)
@@ -569,10 +643,13 @@ ApplicationWindow {
             RowLayout {
                 Layout.fillWidth: true
                 Hint {
-                    text: voices.piperMissing ? qsTr("piper-tts isn't installed, so nothing can be spoken. Install the piper-tts package.")
-                        : voices.error.length > 0 ? voices.error
+                    readonly property string problem: win.kokoroMode ? kokoro.error
+                        : voices.piperMissing ? qsTr("piper-tts isn't installed, so nothing can be spoken. Install the piper-tts package.")
+                        : voices.error
+                    text: problem.length > 0 ? problem
+                        : win.kokoroMode ? (kokoro.installed ? qsTr("%n Kokoro voices", "", list.count) : "")
                         : qsTr("%n voices", "", list.count) + " · " + qsTr("%n downloaded", "", voices.installedCount)
-                    color: voices.piperMissing || voices.error.length > 0 ? win.warningColor : win.mutedColor
+                    color: problem.length > 0 ? win.warningColor : win.mutedColor
                 }
                 BusyIndicator { visible: voices.loading; running: visible; Layout.preferredWidth: 24; Layout.preferredHeight: 24 }
             }
@@ -610,6 +687,7 @@ ApplicationWindow {
                                 ["Delete", qsTr("Remove the selected voice")],
                                 ["↑ ↓", qsTr("Move through the voices")],
                                 ["/", qsTr("Search voices")],
+                                ["E", qsTr("Switch between Piper and Kokoro")],
                                 ["I", qsTr("Show downloaded voices only")],
                                 ["+ −", qsTr("Speak faster or slower")],
                                 ["[ ]", qsTr("Previous or next speaker, and play it")],

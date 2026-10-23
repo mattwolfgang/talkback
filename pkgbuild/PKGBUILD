@@ -1,10 +1,10 @@
 pkgname=talkback
 pkgver=0.1.0
 pkgrel=1
-pkgdesc='Pick the Piper voice that reads Claude replies aloud, and switch spoken replies and dictation'
+pkgdesc='Pick the Piper or Kokoro voice that reads Claude replies aloud, and switch spoken replies and dictation'
 arch=('x86_64' 'aarch64')
 license=('MIT')
-depends=('qt6-base' 'qt6-declarative' 'qt6-wayland' 'piper-tts' 'python' 'jq' 'alsa-utils' 'libnotify')
+depends=('qt6-base' 'qt6-declarative' 'qt6-wayland' 'piper-tts' 'python' 'python-numpy' 'python-onnxruntime' 'jq' 'alsa-utils' 'libnotify' 'curl')
 optdepends=('voxtype-bin: dictation')
 makedepends=('gcc' 'make')
 source=()
@@ -20,6 +20,8 @@ package() {
   install -Dm755 build/talkback "$pkgdir/usr/bin/talkback"
   install -Dm755 bin/talkback-speak "$pkgdir/usr/bin/talkback-speak"
   install -Dm755 bin/talkback-speech-text "$pkgdir/usr/bin/talkback-speech-text"
+  install -Dm755 bin/talkback-kokoro "$pkgdir/usr/bin/talkback-kokoro"
+  install -Dm755 bin/talkback-kokoro-setup "$pkgdir/usr/bin/talkback-kokoro-setup"
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
   install -Dm644 "$startdir/talkback.svg" "$pkgdir/usr/share/icons/hicolor/scalable/apps/talkback.svg"
   install -Dm644 "$startdir/talkback.desktop" "$pkgdir/usr/share/applications/talkback.desktop"

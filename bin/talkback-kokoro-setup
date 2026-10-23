@@ -1,0 +1,44 @@
+#!/bin/bash
+# Installs Kokoro for Talkback: a Python environment with kokoro-onnx (reusing
+# the system's onnxruntime and numpy) and the v1.0 model and voices, about
+# 350 MB in all, under ~/.local/share/talkback/kokoro.
+#
+#   talkback-kokoro-setup            install whatever is missing
+#   talkback-kokoro-setup --check    exit 0 when Kokoro is ready
+
+set -euo pipefail
+
+home="${XDG_DATA_HOME:-$HOME/.local/share}/talkback/kokoro"
+venv="$home/venv"
+release="https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0"
+files=(kokoro-v1.0.onnx voices-v1.0.bin)
+
+ready() {
+  [[ -x $venv/bin/python ]] || return 1
+  "$venv/bin/python" -c 'import kokoro_onnx' 2>/dev/null || return 1
+  for file in "${files[@]}"; do [[ -s $home/$file ]] || return 1; done
+}
+
+if [[ ${1:-} == --check ]]; then
+  ready
+  exit
+fi
+
+mkdir -p "$home"
+
+if ! "$venv/bin/python" -c 'import kokoro_onnx' 2>/dev/null; then
+  echo "Installing kokoro-onnx…"
+  python -m venv --system-site-packages "$venv"
+  "$venv/bin/pip" install --quiet --disable-pip-version-check kokoro-onnx==0.4.7
+fi
+
+for file in "${files[@]}"; do
+  [[ -s $home/$file ]] && continue
+  echo "Downloading $file…"
+  # Download beside the target and rename, so a stopped download never looks finished.
+  curl -sSfL --retry 2 -o "$home/$file.part" "$release/$file"
+  mv "$home/$file.part" "$home/$file"
+done
+
+ready
+echo "Kokoro is ready."

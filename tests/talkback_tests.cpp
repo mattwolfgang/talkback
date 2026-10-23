@@ -7,6 +7,7 @@
 #include <QtTest>
 
 #include "dictation.h"
+#include "kokoro.h"
 #include "settings.h"
 #include "speaker.h"
 #include "theme.h"
@@ -34,8 +35,8 @@ private slots:
         settings.setEnabled(false);
         settings.setVoice("en_GB-alba-medium");
         settings.setSpeed(1.234);
-        QCOMPARE(read(path), QByteArray("enabled=false\nvoice=en_GB-alba-medium\nspeed=1.23\n"
-                                        "expression=0.67\nrhythm=0.80\npause=0.30\n"));
+        QCOMPARE(read(path), QByteArray("enabled=false\nengine=piper\nvoice=en_GB-alba-medium\nkokoroVoice=af_heart\n"
+                                        "speed=1.23\nexpression=0.67\nrhythm=0.80\npause=0.30\n"));
 
         Settings again(path);
         QVERIFY(!again.enabled());
@@ -83,6 +84,42 @@ private slots:
         write(dir.filePath("many.onnx.json"), R"({"num_speakers": 904})");
         QCOMPARE(Voices::speakerCount(dir.path(), "many"), 904);
         QCOMPARE(Voices::speakerCount(dir.path(), "missing"), 1);
+    }
+
+    void settingsKeepAVoicePerEngine()
+    {
+        QTemporaryDir dir;
+        const QString path = dir.filePath("settings.conf");
+        {
+            Settings settings(path);
+            settings.setVoice("en_GB-alba-medium");
+            settings.setEngine("kokoro");
+            settings.setKokoroVoice("bm_george");
+            settings.setEngine("espeak");
+            QCOMPARE(settings.engine(), QString("kokoro"));
+            QCOMPARE(settings.currentVoice(), QString("bm_george"));
+        }
+        Settings again(path);
+        QCOMPARE(again.engine(), QString("kokoro"));
+        QCOMPARE(again.kokoroVoice(), QString("bm_george"));
+        again.setEngine("piper");
+        QCOMPARE(again.currentVoice(), QString("en_GB-alba-medium"));
+    }
+
+    void kokoroVoiceNamesDescribeThemselves()
+    {
+        const QVariantMap heart = Kokoro::describe("af_heart");
+        QCOMPARE(heart.value("name").toString(), QString("Heart"));
+        QCOMPARE(heart.value("language").toString(), QString("English"));
+        QCOMPARE(heart.value("country").toString(), QString("United States"));
+        QCOMPARE(heart.value("quality").toString(), QString("female"));
+        QCOMPARE(Kokoro::describe("bm_george").value("country").toString(), QString("Great Britain"));
+        QCOMPARE(Kokoro::describe("zm_yunxi").value("quality").toString(), QString("male"));
+
+        const QVariantList list = Kokoro::parseList("zf_xiaobei\nbf_emma\naf_heart\n\n");
+        QCOMPARE(list.size(), 3);
+        QCOMPARE(list.at(0).toMap().value("key").toString(), QString("af_heart"));
+        QCOMPARE(list.at(1).toMap().value("key").toString(), QString("bf_emma"));
     }
 
     void settingsClampSpeed()
@@ -200,7 +237,8 @@ private slots:
         Voices voices(QDir::tempPath() + "/talkback-no-voices", QDir::tempPath() + "/talkback-no-cache.json");
         Dictation dictation("true");
         Speaker speaker(QDir::tempPath() + "/talkback-no-claude.json");
-        for (const QObject *object : std::initializer_list<const QObject *>{&settings, &voices, &dictation, &speaker}) {
+        Kokoro kokoro;
+        for (const QObject *object : std::initializer_list<const QObject *>{&settings, &voices, &dictation, &speaker, &kokoro}) {
             const QMetaObject *meta = object->metaObject();
             for (int i = meta->methodOffset(); i < meta->methodCount(); ++i) {
                 const QMetaMethod method = meta->method(i);

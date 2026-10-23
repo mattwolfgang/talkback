@@ -1,5 +1,6 @@
 {
   "%n voices": { "one": "%n voice", "other": "%n voices" },
   "%n downloaded": { "one": "%n downloaded", "other": "%n downloaded" },
+  "%n Kokoro voices": { "one": "%n Kokoro voice", "other": "%n Kokoro voices" },
   "%n speakers": { "one": "%n speaker", "other": "%n speakers" }
 }

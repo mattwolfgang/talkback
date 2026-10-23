@@ -37,6 +37,22 @@ void Settings::setVoice(const QString &voice) {
     emit changed();
 }
 
+void Settings::setEngine(const QString &engine) {
+    if (engine == m_engine || (engine != "piper" && engine != "kokoro"))
+        return;
+    m_engine = engine;
+    save();
+    emit changed();
+}
+
+void Settings::setKokoroVoice(const QString &voice) {
+    if (voice == m_kokoroVoice || voice.isEmpty())
+        return;
+    m_kokoroVoice = voice;
+    save();
+    emit changed();
+}
+
 void Settings::setSpeed(double speed) { setNumber(m_speed, speed, 0.5, 2.0); }
 void Settings::setExpression(double expression) { setNumber(m_expression, expression, 0.0, 1.5); }
 void Settings::setRhythm(double rhythm) { setNumber(m_rhythm, rhythm, 0.0, 1.5); }
@@ -82,7 +98,7 @@ void Settings::setNumber(double &field, double value, double low, double high) {
 
 void Settings::reload() {
     bool enabled = true;
-    QString voice = defaultVoice;
+    QString engine = "piper", voice = defaultVoice, kokoroVoice = defaultKokoroVoice;
     double speed = 1.0, expression = defaultExpression, rhythm = defaultRhythm, pause = defaultPause;
     QMap<QString, int> speakers;
     auto number = [](const QString &value, double &field, double low, double high) {
@@ -100,8 +116,12 @@ void Settings::reload() {
             const QString value = line.section('=', 1).trimmed();
             if (key == "enabled")
                 enabled = value != "false";
+            else if (key == "engine" && (value == "piper" || value == "kokoro"))
+                engine = value;
             else if (key == "voice" && !value.isEmpty())
                 voice = value;
+            else if (key == "kokoroVoice" && !value.isEmpty())
+                kokoroVoice = value;
             else if (key == "speed")
                 number(value, speed, 0.5, 2.0);
             else if (key == "expression")
@@ -121,10 +141,12 @@ void Settings::reload() {
 
     watch();
     const auto differs = [](double a, double b) { return !qFuzzyCompare(a + 1, b + 1); };
-    if (enabled != m_enabled || voice != m_voice || differs(speed, m_speed) || differs(expression, m_expression) ||
+    if (enabled != m_enabled || engine != m_engine || voice != m_voice || kokoroVoice != m_kokoroVoice || differs(speed, m_speed) || differs(expression, m_expression) ||
         differs(rhythm, m_rhythm) || differs(pause, m_pause) || speakers != m_speakers) {
         m_enabled = enabled;
+        m_engine = engine;
         m_voice = voice;
+        m_kokoroVoice = kokoroVoice;
         m_speed = speed;
         m_expression = expression;
         m_rhythm = rhythm;
@@ -155,9 +177,10 @@ bool Settings::save() {
         return false;
     }
     const auto number = [](double value) { return QString::number(value, 'f', 2); };
-    QString contents = QStringLiteral("enabled=%1\nvoice=%2\nspeed=%3\nexpression=%4\nrhythm=%5\npause=%6\n")
-                           .arg(m_enabled ? "true" : "false", m_voice, number(m_speed), number(m_expression),
-                                number(m_rhythm), number(m_pause));
+    QString contents = QStringLiteral("enabled=%1\nengine=%2\nvoice=%3\nkokoroVoice=%4\n")
+                           .arg(m_enabled ? "true" : "false", m_engine, m_voice, m_kokoroVoice) +
+                       QStringLiteral("speed=%1\nexpression=%2\nrhythm=%3\npause=%4\n")
+                           .arg(number(m_speed), number(m_expression), number(m_rhythm), number(m_pause));
     for (auto it = m_speakers.cbegin(); it != m_speakers.cend(); ++it)
         contents += QStringLiteral("speaker.%1=%2\n").arg(it.key()).arg(it.value());
     file.write(contents.toUtf8());

@@ -2,15 +2,23 @@
 
 ![Talkback](docs/screenshot.png)
 
-Talkback picks the [Piper](https://github.com/OHF-Voice/piper1-gpl) voice that
-reads Claude Code's replies aloud, and turns spoken replies and Voxtype
-dictation on and off. Browse every Piper voice, download one, hear it, and
-make it the voice Claude speaks with.
+Talkback picks the voice that reads Claude Code's replies aloud, and turns
+spoken replies and Voxtype dictation on and off. It speaks with either of two
+local engines:
+
+- [Piper](https://github.com/OHF-Voice/piper1-gpl): fast and light, with
+  hundreds of voices to browse, download and try.
+- [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M), through
+  [kokoro-onnx](https://github.com/thewh1teagle/kokoro-onnx): more natural
+  rhythm and intonation, 54 voices, about a second to start. The window
+  installs it (about 350 MB under `~/.local/share/talkback/kokoro`), or run
+  `talkback kokoro install`.
 
 It has three parts:
 
 - **`talkback-speak`**, a Claude Code Stop hook that reads each finished reply
-  aloud with Piper and plays previews. `talkback-speech-text` first turns the
+  aloud with the chosen engine and plays previews (`talkback-kokoro` is the
+  Kokoro side). `talkback-speech-text` first turns the
   Markdown into plain sentences: code blocks and tables are skipped, list
   items and headings end like sentences, paths shrink to their file name, and
   symbols like `→` and `e.g.` read as words.
@@ -33,6 +41,7 @@ Settings live in `~/.config/talkback/settings.conf` and voices in
 | `Delete` | Remove the selected voice |
 | `↑` `↓` | Move through the voices |
 | `/` | Search voices |
+| `E` | Switch between Piper and Kokoro |
 | `I` | Show downloaded voices only |
 | `+` `-` | Speak faster or slower |
 | `[` `]` | Previous or next speaker of a multi-speaker voice, and play it |
@@ -47,7 +56,9 @@ Settings live in `~/.config/talkback/settings.conf` and voices in
 ```text
 talkback speech [on|off|toggle|status] [--notify]
 talkback dictation [on|off|toggle|status] [--notify]
+talkback engine [piper|kokoro]
 talkback voice [NAME]
+talkback kokoro install
 talkback speaker [N]
 talkback say TEXT
 talkback stop

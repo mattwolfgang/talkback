@@ -7,6 +7,7 @@
 #include <QTextStream>
 
 #include "dictation.h"
+#include "kokoro.h"
 #include "settings.h"
 #include "speaker.h"
 #include "voices.h"
@@ -28,7 +29,9 @@ const char *usage =
     "  open                                  open the window (the default)\n"
     "  speech [on|off|toggle|status]         read Claude's replies aloud\n"
     "  dictation [on|off|toggle|status]      let Voxtype listen for the dictation keys\n"
-    "  voice [NAME]                          show or set the voice (must be downloaded)\n"
+    "  engine [piper|kokoro]                 show or set the speech engine\n"
+    "  voice [NAME]                          show or set the engine's voice\n"
+    "  kokoro install                        install Kokoro (about 350 MB)\n"
     "  speaker [N]                           show or set the speaker of a multi-speaker voice\n"
     "  say TEXT                              speak TEXT with the current voice\n"
     "  stop                                  stop speaking\n"
@@ -129,11 +132,44 @@ int runCli(const QStringList &all) {
         return 0;
     }
 
+    if (command == "engine") {
+        Settings settings;
+        if (!argument.isEmpty()) {
+            if (argument != "piper" && argument != "kokoro") {
+                err() << usage;
+                return 1;
+            }
+            if (argument == "kokoro" && QProcess::execute(Speaker::helper("talkback-kokoro-setup"), {"--check"}) != 0) {
+                err() << "Kokoro isn't installed. Run: talkback kokoro install\n";
+                return 1;
+            }
+            settings.setEngine(argument);
+        }
+        out() << settings.engine() << "\n";
+        return settings.error().isEmpty() ? 0 : 1;
+    }
+
+    if (command == "kokoro" && argument == "install") {
+        return QProcess::execute(Speaker::helper("talkback-kokoro-setup"), {}) == 0 ? 0 : 1;
+    }
+
     if (command == "voice") {
         Settings settings;
         if (argument.isEmpty()) {
-            out() << settings.voice() << "\n";
+            out() << settings.currentVoice() << "\n";
             return 0;
+        }
+        if (settings.engine() == "kokoro") {
+            QProcess list;
+            list.start(Kokoro::python(), {"-I", Speaker::helper("talkback-kokoro"), "--list"});
+            list.waitForFinished(30000);
+            if (!QString::fromUtf8(list.readAllStandardOutput()).split('\n').contains(argument)) {
+                err() << "Not a Kokoro voice: " << argument << ". See the list in the Talkback window.\n";
+                return 1;
+            }
+            settings.setKokoroVoice(argument);
+            out() << settings.kokoroVoice() << "\n";
+            return settings.error().isEmpty() ? 0 : 1;
         }
         if (!Voices::scanInstalled(Voices::defaultVoiceDirectory()).contains(argument)) {
             err() << "Voice not downloaded: " << argument << ". Download it in the Talkback window.\n";
@@ -170,7 +206,8 @@ int runCli(const QStringList &all) {
             return 1;
         }
         Settings settings;
-        return QProcess::execute(Speaker::speakCommand(), Speaker::sayArguments(text, settings.voice(), settings)) == 0
+        return QProcess::execute(Speaker::speakCommand(),
+                                 Speaker::sayArguments(text, settings.engine(), settings.currentVoice(), settings)) == 0
                    ? 0 : 1;
     }
 
@@ -193,13 +230,16 @@ int runCli(const QStringList &all) {
         const auto [available, active] = dictationState();
         const QJsonObject status{
             {"speech", settings.enabled()},
-            {"voice", settings.voice()},
+            {"engine", settings.engine()},
+            {"voice", settings.currentVoice()},
             {"speed", settings.speed()},
             {"expression", settings.expression()},
             {"rhythm", settings.rhythm()},
             {"pause", settings.pause()},
             {"speaker", settings.speaker()},
-            {"voiceInstalled", Voices::scanInstalled(Voices::defaultVoiceDirectory()).contains(settings.voice())},
+            {"voiceInstalled", settings.engine() == "kokoro"
+                                   ? QProcess::execute(Speaker::helper("talkback-kokoro-setup"), {"--check"}) == 0
+                                   : Voices::scanInstalled(Voices::defaultVoiceDirectory()).contains(settings.voice())},
             {"hookInstalled", Speaker().hookInstalled()},
             {"dictationAvailable", available},
             {"dictation", active},
@@ -208,7 +248,8 @@ int runCli(const QStringList &all) {
             out() << QJsonDocument(status).toJson(QJsonDocument::Compact) << "\n";
         } else {
             out() << "Spoken replies: " << (settings.enabled() ? "on" : "off") << "\n"
-                  << "Voice:          " << settings.voice()
+                  << "Engine:         " << settings.engine() << "\n"
+                  << "Voice:          " << settings.currentVoice()
                   << (status.value("voiceInstalled").toBool() ? "" : " (not downloaded)") << "\n"
                   << "Speed:          " << QString::number(settings.speed(), 'f', 2) << "x\n"
                   << "Expression:     " << QString::number(settings.expression(), 'f', 2) << "\n"

@@ -29,24 +29,30 @@ QString Speaker::defaultClaudeSettings() {
 // Next to the binary first, so a development build uses bin/talkback-speak
 // from its own checkout; the installed package puts both in /usr/bin.
 QString Speaker::speakCommand() {
-    const QString beside = QCoreApplication::applicationDirPath() + "/../bin/talkback-speak";
-    if (QFileInfo(beside).isExecutable())
-        return QFileInfo(beside).canonicalFilePath();
-    return "talkback-speak";
+    return helper("talkback-speak");
 }
 
-QStringList Speaker::sayArguments(const QString &text, const QString &voice, const Settings &settings) {
+QString Speaker::helper(const QString &name) {
+    const QString beside = QCoreApplication::applicationDirPath() + "/../bin/" + name;
+    if (QFileInfo(beside).isExecutable())
+        return QFileInfo(beside).canonicalFilePath();
+    const QString installed = QStandardPaths::findExecutable(name);
+    return installed.isEmpty() ? name : installed;
+}
+
+QStringList Speaker::sayArguments(const QString &text, const QString &engine, const QString &voice,
+                                  const Settings &settings) {
     const auto number = [](double value) { return QString::number(value, 'f', 2); };
-    return {"--say", text, "--voice", voice, "--speed", number(settings.speed()),
+    return {"--say", text, "--engine", engine, "--voice", voice, "--speed", number(settings.speed()),
             "--expression", number(settings.expression()), "--rhythm", number(settings.rhythm()),
             "--pause", number(settings.pause()), "--speaker", QString::number(settings.speakerFor(voice))};
 }
 
-void Speaker::say(const QString &text, const QString &voice, QObject *object) {
+void Speaker::say(const QString &text, const QString &engine, const QString &voice, QObject *object) {
     const auto *settings = qobject_cast<Settings *>(object);
     if (text.trimmed().isEmpty() || !settings)
         return;
-    const bool started = QProcess::startDetached(speakCommand(), sayArguments(text, voice, *settings));
+    const bool started = QProcess::startDetached(speakCommand(), sayArguments(text, engine, voice, *settings));
     setError(started ? QString() : tr("Couldn't run talkback-speak."));
 }
 
