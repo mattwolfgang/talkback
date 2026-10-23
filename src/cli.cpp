@@ -150,9 +150,8 @@ int runCli(const QStringList &all) {
             return 1;
         }
         Settings settings;
-        return QProcess::execute(Speaker::speakCommand(),
-                                 {"--say", text, "--voice", settings.voice(), "--speed",
-                                  QString::number(settings.speed(), 'f', 2)}) == 0 ? 0 : 1;
+        return QProcess::execute(Speaker::speakCommand(), Speaker::sayArguments(text, settings.voice(), settings)) == 0
+                   ? 0 : 1;
     }
 
     if (command == "stop") {
@@ -176,6 +175,9 @@ int runCli(const QStringList &all) {
             {"speech", settings.enabled()},
             {"voice", settings.voice()},
             {"speed", settings.speed()},
+            {"expression", settings.expression()},
+            {"rhythm", settings.rhythm()},
+            {"pause", settings.pause()},
             {"voiceInstalled", Voices::scanInstalled(Voices::defaultVoiceDirectory()).contains(settings.voice())},
             {"hookInstalled", Speaker().hookInstalled()},
             {"dictationAvailable", available},
@@ -188,6 +190,9 @@ int runCli(const QStringList &all) {
                   << "Voice:          " << settings.voice()
                   << (status.value("voiceInstalled").toBool() ? "" : " (not downloaded)") << "\n"
                   << "Speed:          " << QString::number(settings.speed(), 'f', 2) << "x\n"
+                  << "Expression:     " << QString::number(settings.expression(), 'f', 2) << "\n"
+                  << "Rhythm:         " << QString::number(settings.rhythm(), 'f', 2) << "\n"
+                  << "Pause:          " << QString::number(settings.pause(), 'f', 2) << " s\n"
                   << "Claude hook:    " << (status.value("hookInstalled").toBool() ? "installed" : "missing") << "\n"
                   << "Dictation:      " << (!available ? "Voxtype not installed" : active ? "on" : "off") << "\n";
         }

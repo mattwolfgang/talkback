@@ -34,12 +34,27 @@ private slots:
         settings.setEnabled(false);
         settings.setVoice("en_GB-alba-medium");
         settings.setSpeed(1.234);
-        QCOMPARE(read(path), QByteArray("enabled=false\nvoice=en_GB-alba-medium\nspeed=1.23\n"));
+        QCOMPARE(read(path), QByteArray("enabled=false\nvoice=en_GB-alba-medium\nspeed=1.23\n"
+                                        "expression=0.67\nrhythm=0.80\npause=0.30\n"));
 
         Settings again(path);
         QVERIFY(!again.enabled());
         QCOMPARE(again.voice(), QString("en_GB-alba-medium"));
         QCOMPARE(again.speed(), 1.23);
+    }
+
+    void settingsKeepNaturalness()
+    {
+        QTemporaryDir dir;
+        const QString path = dir.filePath("settings.conf");
+        write(path, "expression=0.9\nrhythm=1.1\npause=7\n");
+        Settings settings(path);
+        QCOMPARE(settings.expression(), 0.9);
+        QCOMPARE(settings.rhythm(), 1.1);
+        QCOMPARE(settings.pause(), 1.5);
+        settings.resetNaturalness();
+        QCOMPARE(settings.expression(), Settings::defaultExpression);
+        QCOMPARE(settings.pause(), Settings::defaultPause);
     }
 
     void settingsClampSpeed()

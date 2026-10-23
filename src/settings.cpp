@@ -37,12 +37,25 @@ void Settings::setVoice(const QString &voice) {
     emit changed();
 }
 
-void Settings::setSpeed(double speed) {
-    // Two decimals is all the slider shows, and it keeps the file readable.
-    speed = std::round(qBound(0.5, speed, 2.0) * 100) / 100;
-    if (qFuzzyCompare(speed, m_speed))
+void Settings::setSpeed(double speed) { setNumber(m_speed, speed, 0.5, 2.0); }
+void Settings::setExpression(double expression) { setNumber(m_expression, expression, 0.0, 1.5); }
+void Settings::setRhythm(double rhythm) { setNumber(m_rhythm, rhythm, 0.0, 1.5); }
+void Settings::setPause(double pause) { setNumber(m_pause, pause, 0.0, 1.5); }
+
+void Settings::resetNaturalness() {
+    m_expression = defaultExpression;
+    m_rhythm = defaultRhythm;
+    m_pause = defaultPause;
+    save();
+    emit changed();
+}
+
+void Settings::setNumber(double &field, double value, double low, double high) {
+    // Two decimals is all the sliders show, and it keeps the file readable.
+    value = std::round(qBound(low, value, high) * 100) / 100;
+    if (qFuzzyCompare(value + 1, field + 1))
         return;
-    m_speed = speed;
+    field = value;
     save();
     emit changed();
 }
@@ -50,7 +63,13 @@ void Settings::setSpeed(double speed) {
 void Settings::reload() {
     bool enabled = true;
     QString voice = defaultVoice;
-    double speed = 1.0;
+    double speed = 1.0, expression = defaultExpression, rhythm = defaultRhythm, pause = defaultPause;
+    auto number = [](const QString &value, double &field, double low, double high) {
+        bool ok = false;
+        const double parsed = value.toDouble(&ok);
+        if (ok)
+            field = qBound(low, parsed, high);
+    };
 
     QFile file(m_path);
     if (file.open(QIODevice::ReadOnly)) {
@@ -62,20 +81,27 @@ void Settings::reload() {
                 enabled = value != "false";
             else if (key == "voice" && !value.isEmpty())
                 voice = value;
-            else if (key == "speed") {
-                bool ok = false;
-                const double parsed = value.toDouble(&ok);
-                if (ok && parsed > 0)
-                    speed = qBound(0.5, parsed, 2.0);
-            }
+            else if (key == "speed")
+                number(value, speed, 0.5, 2.0);
+            else if (key == "expression")
+                number(value, expression, 0.0, 1.5);
+            else if (key == "rhythm")
+                number(value, rhythm, 0.0, 1.5);
+            else if (key == "pause")
+                number(value, pause, 0.0, 1.5);
         }
     }
 
     watch();
-    if (enabled != m_enabled || voice != m_voice || !qFuzzyCompare(speed, m_speed)) {
+    const auto differs = [](double a, double b) { return !qFuzzyCompare(a + 1, b + 1); };
+    if (enabled != m_enabled || voice != m_voice || differs(speed, m_speed) || differs(expression, m_expression) ||
+        differs(rhythm, m_rhythm) || differs(pause, m_pause)) {
         m_enabled = enabled;
         m_voice = voice;
         m_speed = speed;
+        m_expression = expression;
+        m_rhythm = rhythm;
+        m_pause = pause;
         emit changed();
     }
 }
@@ -100,8 +126,10 @@ bool Settings::save() {
         m_error = file.errorString();
         return false;
     }
-    file.write(QStringLiteral("enabled=%1\nvoice=%2\nspeed=%3\n")
-                   .arg(m_enabled ? "true" : "false", m_voice, QString::number(m_speed, 'f', 2))
+    const auto number = [](double value) { return QString::number(value, 'f', 2); };
+    file.write(QStringLiteral("enabled=%1\nvoice=%2\nspeed=%3\nexpression=%4\nrhythm=%5\npause=%6\n")
+                   .arg(m_enabled ? "true" : "false", m_voice, number(m_speed), number(m_expression),
+                        number(m_rhythm), number(m_pause))
                    .toUtf8());
     if (!file.commit()) {
         m_error = file.errorString();

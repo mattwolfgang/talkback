@@ -10,8 +10,13 @@ make it the voice Claude speaks with.
 It has three parts:
 
 - **`talkback-speak`**, a Claude Code Stop hook that reads each finished reply
-  aloud with Piper (skipping code blocks and tables) and plays previews.
-- **`talkback`**, the window: the voice catalog, speed, and the two switches.
+  aloud with Piper and plays previews. `talkback-speech-text` first turns the
+  Markdown into plain sentences: code blocks and tables are skipped, list
+  items and headings end like sentences, paths shrink to their file name, and
+  symbols like `→` and `e.g.` read as words.
+- **`talkback`**, the window: the voice catalog, the two switches, and how the
+  voice sounds: speed, expression (how much pitch varies), rhythm (how much
+  sound lengths vary), and the pause after each sentence.
 - **`talkback <command>`**, the same controls with no window, for keybindings.
 
 Settings live in `~/.config/talkback/settings.conf` and voices in

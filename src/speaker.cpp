@@ -10,6 +10,8 @@
 #include <QSaveFile>
 #include <QStandardPaths>
 
+#include "settings.h"
+
 namespace {
 bool isOurs(const QJsonValue &hook) {
     const QString command = hook.toObject().value("command").toString();
@@ -33,11 +35,17 @@ QString Speaker::speakCommand() {
     return "talkback-speak";
 }
 
-void Speaker::say(const QString &text, const QString &voice, double speed) {
-    if (text.trimmed().isEmpty())
+QStringList Speaker::sayArguments(const QString &text, const QString &voice, const Settings &settings) {
+    const auto number = [](double value) { return QString::number(value, 'f', 2); };
+    return {"--say", text, "--voice", voice, "--speed", number(settings.speed()),
+            "--expression", number(settings.expression()), "--rhythm", number(settings.rhythm()),
+            "--pause", number(settings.pause())};
+}
+
+void Speaker::say(const QString &text, const QString &voice, Settings *settings) {
+    if (text.trimmed().isEmpty() || !settings)
         return;
-    const bool started = QProcess::startDetached(
-        speakCommand(), {"--say", text, "--voice", voice, "--speed", QString::number(speed, 'f', 2)});
+    const bool started = QProcess::startDetached(speakCommand(), sayArguments(text, voice, *settings));
     setError(started ? QString() : tr("Couldn't run talkback-speak."));
 }
 

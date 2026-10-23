@@ -39,7 +39,7 @@ ApplicationWindow {
 
     function preview(key) {
         if (voices.isInstalled(key))
-            speaker.say(win.sample, key, settings.speed)
+            speaker.say(win.sample, key, settings)
     }
 
     function previewSelected() {
@@ -114,6 +114,44 @@ ApplicationWindow {
         font.pixelSize: 12
         wrapMode: Text.WordWrap
         Layout.fillWidth: true
+    }
+
+    // One row of the voice panel: a name, a slider, and its value.
+    component SettingSlider: RowLayout {
+        id: setting
+        property string label
+        property string tip
+        property real value
+        property real from
+        property real to
+        property real step: 0.05
+        property string valueText
+        signal moved(real value)
+
+        Layout.fillWidth: true
+        spacing: 10
+        Label {
+            text: setting.label
+            Layout.preferredWidth: 130
+            ToolTip.visible: tipArea.hovered && setting.tip.length > 0
+            ToolTip.text: setting.tip
+            ToolTip.delay: 400
+            HoverHandler { id: tipArea }
+        }
+        Slider {
+            Layout.fillWidth: true
+            from: setting.from
+            to: setting.to
+            stepSize: setting.step
+            value: setting.value
+            onMoved: setting.moved(value)
+        }
+        Label {
+            Layout.preferredWidth: 60
+            horizontalAlignment: Text.AlignRight
+            text: setting.valueText
+            font.features: { "tnum": 1 }
+        }
     }
 
     component ToggleCard: Panel {
@@ -263,25 +301,40 @@ ApplicationWindow {
                         color: win.warningColor
                     }
 
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 10
-                        Label { text: qsTr("Speed") }
-                        Slider {
-                            id: speedSlider
-                            Layout.fillWidth: true
-                            from: 0.5
-                            to: 2.0
-                            stepSize: 0.05
-                            value: settings.speed
-                            onMoved: settings.speed = value
-                        }
-                        Label {
-                            Layout.preferredWidth: 52
-                            horizontalAlignment: Text.AlignRight
-                            text: qsTr("%1×").arg(settings.speed.toLocaleString(Qt.locale(), 'f', 2))
-                            font.features: { "tnum": 1 }
-                        }
+                    SettingSlider {
+                        label: qsTr("Speed")
+                        from: 0.5
+                        to: 2.0
+                        value: settings.speed
+                        valueText: qsTr("%1×").arg(settings.speed.toLocaleString(Qt.locale(), 'f', 2))
+                        onMoved: value => settings.speed = value
+                    }
+                    SettingSlider {
+                        label: qsTr("Expression")
+                        tip: qsTr("How much the pitch and tone vary. Higher sounds livelier; too high gets wobbly.")
+                        from: 0
+                        to: 1.5
+                        value: settings.expression
+                        valueText: settings.expression.toLocaleString(Qt.locale(), 'f', 2)
+                        onMoved: value => settings.expression = value
+                    }
+                    SettingSlider {
+                        label: qsTr("Rhythm")
+                        tip: qsTr("How much the length of each sound varies. Higher sounds less mechanical; too high stumbles.")
+                        from: 0
+                        to: 1.5
+                        value: settings.rhythm
+                        valueText: settings.rhythm.toLocaleString(Qt.locale(), 'f', 2)
+                        onMoved: value => settings.rhythm = value
+                    }
+                    SettingSlider {
+                        label: qsTr("Sentence pause")
+                        tip: qsTr("Silence after each sentence.")
+                        from: 0
+                        to: 1.5
+                        value: settings.pause
+                        valueText: qsTr("%1 s").arg(settings.pause.toLocaleString(Qt.locale(), 'f', 2))
+                        onMoved: value => settings.pause = value
                     }
 
                     RowLayout {
@@ -290,7 +343,7 @@ ApplicationWindow {
                         TextField {
                             id: sampleField
                             Layout.fillWidth: true
-                            placeholderText: qsTr("Hello! This is how Claude's replies will sound.")
+                            placeholderText: qsTr("Hello! This is how replies will sound. Here is a second sentence.")
                             onAccepted: win.preview(settings.voice)
                         }
                         AppButton {
@@ -303,6 +356,14 @@ ApplicationWindow {
                             onClicked: win.preview(settings.voice)
                         }
                         AppButton { text: qsTr("Stop"); flat: true; onClicked: speaker.stop() }
+                        AppButton {
+                            text: qsTr("Reset")
+                            flat: true
+                            onClicked: settings.resetNaturalness()
+                            ToolTip.visible: hovered
+                            ToolTip.text: qsTr("Put expression, rhythm and pause back to their defaults")
+                            ToolTip.delay: 400
+                        }
                     }
                 }
             }

@@ -8,3 +8,4 @@ cd "$ROOT/build/tests"
 qmake6 "$ROOT/tests/talkback_tests.pro"
 make -j"$(nproc)"
 QT_QPA_PLATFORM=offscreen ./talkback_tests
+python3 "$ROOT/tests/speech_text_test.py"

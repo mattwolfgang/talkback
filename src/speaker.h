@@ -3,6 +3,8 @@
 #include <QJsonObject>
 #include <QObject>
 
+class Settings;
+
 // Plays previews through talkback-speak, the same script Claude Code runs,
 // so a preview sounds exactly like a spoken reply. Also checks and installs
 // the Claude Code Stop hook that runs it.
@@ -20,7 +22,9 @@ public:
     bool hookInstalled() const;
     QString error() const { return m_error; }
 
-    Q_INVOKABLE void say(const QString &text, const QString &voice, double speed);
+    // Speaks with `settings` but the given voice, so any voice can be previewed.
+    Q_INVOKABLE void say(const QString &text, const QString &voice, Settings *settings);
+    static QStringList sayArguments(const QString &text, const QString &voice, const Settings &settings);
     Q_INVOKABLE void stop();
     Q_INVOKABLE bool installHook();
 
