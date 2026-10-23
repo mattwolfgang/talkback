@@ -57,6 +57,34 @@ private slots:
         QCOMPARE(settings.pause(), Settings::defaultPause);
     }
 
+    void settingsRememberASpeakerPerVoice()
+    {
+        QTemporaryDir dir;
+        const QString path = dir.filePath("settings.conf");
+        {
+            Settings settings(path);
+            settings.setVoice("en_US-libritts_r-medium");
+            settings.setSpeaker("en_US-libritts_r-medium", 412);
+            settings.setSpeaker("en_GB-vctk-medium", 7);
+            QCOMPARE(settings.speaker(), 412);
+            QVERIFY(read(path).contains("speaker.en_US-libritts_r-medium=412\n"));
+            settings.setSpeaker("en_GB-vctk-medium", 0);
+            QVERIFY(!read(path).contains("en_GB-vctk-medium"));
+        }
+        Settings again(path);
+        QCOMPARE(again.speaker(), 412);
+        QCOMPARE(again.speakerFor("en_GB-vctk-medium"), 0);
+        QCOMPARE(again.speakers().value("en_US-libritts_r-medium").toInt(), 412);
+    }
+
+    void speakerCountComesFromTheVoiceConfig()
+    {
+        QTemporaryDir dir;
+        write(dir.filePath("many.onnx.json"), R"({"num_speakers": 904})");
+        QCOMPARE(Voices::speakerCount(dir.path(), "many"), 904);
+        QCOMPARE(Voices::speakerCount(dir.path(), "missing"), 1);
+    }
+
     void settingsClampSpeed()
     {
         QTemporaryDir dir;

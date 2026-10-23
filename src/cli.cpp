@@ -29,6 +29,7 @@ const char *usage =
     "  speech [on|off|toggle|status]         read Claude's replies aloud\n"
     "  dictation [on|off|toggle|status]      let Voxtype listen for the dictation keys\n"
     "  voice [NAME]                          show or set the voice (must be downloaded)\n"
+    "  speaker [N]                           show or set the speaker of a multi-speaker voice\n"
     "  say TEXT                              speak TEXT with the current voice\n"
     "  stop                                  stop speaking\n"
     "  hook install                          set up the Claude Code Stop hook\n"
@@ -143,6 +144,25 @@ int runCli(const QStringList &all) {
         return settings.error().isEmpty() ? 0 : 1;
     }
 
+    if (command == "speaker") {
+        Settings settings;
+        if (argument.isEmpty()) {
+            out() << settings.speaker() << "\n";
+            return 0;
+        }
+        bool ok = false;
+        const int speaker = argument.toInt(&ok);
+        const int count = Voices::speakerCount(Voices::defaultVoiceDirectory(), settings.voice());
+        if (!ok || speaker < 0 || speaker >= count) {
+            err() << settings.voice() << " has " << count << (count == 1 ? " speaker" : " speakers")
+                  << "; pick 0 to " << count - 1 << ".\n";
+            return 1;
+        }
+        settings.setSpeaker(settings.voice(), speaker);
+        out() << settings.speaker() << "\n";
+        return settings.error().isEmpty() ? 0 : 1;
+    }
+
     if (command == "say") {
         const QString text = arguments.mid(1).join(' ');
         if (text.isEmpty()) {
@@ -178,6 +198,7 @@ int runCli(const QStringList &all) {
             {"expression", settings.expression()},
             {"rhythm", settings.rhythm()},
             {"pause", settings.pause()},
+            {"speaker", settings.speaker()},
             {"voiceInstalled", Voices::scanInstalled(Voices::defaultVoiceDirectory()).contains(settings.voice())},
             {"hookInstalled", Speaker().hookInstalled()},
             {"dictationAvailable", available},
@@ -193,6 +214,7 @@ int runCli(const QStringList &all) {
                   << "Expression:     " << QString::number(settings.expression(), 'f', 2) << "\n"
                   << "Rhythm:         " << QString::number(settings.rhythm(), 'f', 2) << "\n"
                   << "Pause:          " << QString::number(settings.pause(), 'f', 2) << " s\n"
+                  << "Speaker:        " << settings.speaker() << "\n"
                   << "Claude hook:    " << (status.value("hookInstalled").toBool() ? "installed" : "missing") << "\n"
                   << "Dictation:      " << (!available ? "Voxtype not installed" : active ? "on" : "off") << "\n";
         }

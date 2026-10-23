@@ -39,7 +39,7 @@ QStringList Speaker::sayArguments(const QString &text, const QString &voice, con
     const auto number = [](double value) { return QString::number(value, 'f', 2); };
     return {"--say", text, "--voice", voice, "--speed", number(settings.speed()),
             "--expression", number(settings.expression()), "--rhythm", number(settings.rhythm()),
-            "--pause", number(settings.pause())};
+            "--pause", number(settings.pause()), "--speaker", QString::number(settings.speakerFor(voice))};
 }
 
 void Speaker::say(const QString &text, const QString &voice, QObject *object) {

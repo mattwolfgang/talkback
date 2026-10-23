@@ -1,8 +1,10 @@
 #pragma once
 
 #include <QFileSystemWatcher>
+#include <QMap>
 #include <QObject>
 #include <QTimer>
+#include <QVariantMap>
 
 // The settings talkback-speak reads: whether replies are spoken, which Piper
 // voice, how fast, and how lively. A plain key=value file, so the shell script and the
@@ -15,6 +17,10 @@ class Settings : public QObject {
     Q_PROPERTY(double expression READ expression WRITE setExpression NOTIFY changed)
     Q_PROPERTY(double rhythm READ rhythm WRITE setRhythm NOTIFY changed)
     Q_PROPERTY(double pause READ pause WRITE setPause NOTIFY changed)
+    // The speaker of the current voice, for voices trained on many people.
+    Q_PROPERTY(int speaker READ speaker NOTIFY changed)
+    // Every saved choice, voice to speaker, so QML bindings update with them.
+    Q_PROPERTY(QVariantMap speakers READ speakers NOTIFY changed)
 
 public:
     explicit Settings(const QString &path = {}, QObject *parent = nullptr);
@@ -33,6 +39,9 @@ public:
     double expression() const { return m_expression; }
     double rhythm() const { return m_rhythm; }
     double pause() const { return m_pause; }
+    int speaker() const { return speakerFor(m_voice); }
+    QVariantMap speakers() const;
+    Q_INVOKABLE int speakerFor(const QString &voice) const { return m_speakers.value(voice, 0); }
 
     void setEnabled(bool enabled);
     void setVoice(const QString &voice);
@@ -41,6 +50,7 @@ public:
     void setRhythm(double rhythm);
     void setPause(double pause);
     Q_INVOKABLE void resetNaturalness();
+    Q_INVOKABLE void setSpeaker(const QString &voice, int speaker);
 
     QString error() const { return m_error; }
 
@@ -60,6 +70,7 @@ private:
     double m_expression = defaultExpression;
     double m_rhythm = defaultRhythm;
     double m_pause = defaultPause;
+    QMap<QString, int> m_speakers;
     QString m_error;
     QFileSystemWatcher m_watcher;
     QTimer m_debounce;

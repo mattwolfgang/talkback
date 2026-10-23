@@ -62,6 +62,25 @@ ApplicationWindow {
         }
     }
 
+    readonly property int speakerCount: win.current && win.current.speakers ? win.current.speakers : 1
+
+    // Steps through the current voice's speakers, wrapping at the ends, and
+    // plays each one so they can be compared by ear.
+    function stepSpeaker(step) {
+        if (win.speakerCount < 2)
+            return
+        const next = (settings.speaker + step + win.speakerCount) % win.speakerCount
+        settings.setSpeaker(settings.voice, next)
+        win.preview(settings.voice)
+    }
+
+    function randomSpeaker() {
+        if (win.speakerCount < 2)
+            return
+        settings.setSpeaker(settings.voice, Math.floor(Math.random() * win.speakerCount))
+        win.preview(settings.voice)
+    }
+
     function nudgeSpeed(step) {
         settings.speed = settings.speed + step
     }
@@ -83,6 +102,8 @@ ApplicationWindow {
     Shortcut { sequence: "I"; enabled: !win.typing; context: Qt.ApplicationShortcut; onActivated: voices.installedOnly = !voices.installedOnly }
     Shortcut { sequences: ["+", "="]; enabled: !win.typing; context: Qt.ApplicationShortcut; onActivated: win.nudgeSpeed(0.05) }
     Shortcut { sequence: "-"; enabled: !win.typing; context: Qt.ApplicationShortcut; onActivated: win.nudgeSpeed(-0.05) }
+    Shortcut { sequence: "["; enabled: !win.typing; context: Qt.ApplicationShortcut; onActivated: win.stepSpeaker(-1) }
+    Shortcut { sequence: "]"; enabled: !win.typing; context: Qt.ApplicationShortcut; onActivated: win.stepSpeaker(1) }
     Shortcut { sequence: "/"; enabled: !win.typing; context: Qt.ApplicationShortcut; onActivated: searchField.forceActiveFocus() }
     Shortcut { sequences: [StandardKey.Find]; context: Qt.ApplicationShortcut; onActivated: searchField.forceActiveFocus() }
     Shortcut {
@@ -301,6 +322,30 @@ ApplicationWindow {
                         color: win.warningColor
                     }
 
+                    RowLayout {
+                        visible: win.speakerCount > 1
+                        Layout.fillWidth: true
+                        spacing: 10
+                        Label { text: qsTr("Speaker"); Layout.preferredWidth: 130 }
+                        SpinBox {
+                            id: speakerBox
+                            from: 0
+                            to: Math.max(0, win.speakerCount - 1)
+                            value: settings.speaker
+                            editable: true
+                            Material.roundedScale: theme.radius
+                            onValueModified: {
+                                settings.setSpeaker(settings.voice, value)
+                                value = Qt.binding(() => settings.speaker)
+                                win.preview(settings.voice)
+                            }
+                        }
+                        Hint {
+                            Layout.fillWidth: true
+                            text: qsTr("0 to %1 · [ and ] step and play").arg(win.speakerCount - 1)
+                        }
+                        AppButton { text: qsTr("Random"); flat: true; onClicked: win.randomSpeaker() }
+                    }
                     SettingSlider {
                         label: qsTr("Speed")
                         from: 0.5
@@ -450,8 +495,11 @@ ApplicationWindow {
                                         let parts = [row.modelData.name]
                                         if (row.modelData.quality)
                                             parts.push(row.modelData.quality.replace("_", " "))
-                                        if (row.modelData.speakers > 1)
-                                            parts.push(qsTr("%n speakers (plays the first)", "", row.modelData.speakers))
+                                        if (row.modelData.speakers > 1) {
+                                            parts.push(qsTr("%n speakers", "", row.modelData.speakers))
+                                            if (row.modelData.installed)
+                                                parts.push(qsTr("speaker %1").arg(settings.speakers[row.modelData.key] || 0))
+                                        }
                                         if (!row.modelData.installed && row.modelData.megabytes > 0)
                                             parts.push(qsTr("%1 MB").arg(row.modelData.megabytes.toLocaleString(Qt.locale(), 'f', 0)))
                                         return parts.join(" · ")
@@ -564,6 +612,7 @@ ApplicationWindow {
                                 ["/", qsTr("Search voices")],
                                 ["I", qsTr("Show downloaded voices only")],
                                 ["+ −", qsTr("Speak faster or slower")],
+                                ["[ ]", qsTr("Previous or next speaker, and play it")],
                                 ["S", qsTr("Turn spoken replies on or off")],
                                 ["V", qsTr("Turn dictation on or off")],
                                 ["Esc", qsTr("Stop speaking")],

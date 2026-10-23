@@ -165,6 +165,13 @@ QSet<QString> Voices::scanInstalled(const QString &directory) {
     return installed;
 }
 
+int Voices::speakerCount(const QString &directory, const QString &key) {
+    QFile config(directory + "/" + key + ".onnx.json");
+    if (!config.open(QIODevice::ReadOnly))
+        return 1;
+    return qMax(1, QJsonDocument::fromJson(config.readAll()).object().value("num_speakers").toInt(1));
+}
+
 QVariantList Voices::parseCatalog(const QByteArray &json, const QSet<QString> &installed, const QString &firstFamily) {
     static const QHash<QString, int> qualityOrder{{"x_low", 0}, {"low", 1}, {"medium", 2}, {"high", 3}};
     const QJsonObject catalog = QJsonDocument::fromJson(json).object();

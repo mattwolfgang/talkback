@@ -52,6 +52,8 @@ public:
                                      const QString &firstFamily = {});
     static QVariantList filtered(const QVariantList &all, const QString &filter, bool installedOnly);
     static QSet<QString> scanInstalled(const QString &directory);
+    // From the downloaded voice's own config; 1 when it isn't downloaded.
+    static int speakerCount(const QString &directory, const QString &key);
 
 signals:
     void voicesChanged();

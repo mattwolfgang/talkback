@@ -16,7 +16,8 @@ It has three parts:
   symbols like `→` and `e.g.` read as words.
 - **`talkback`**, the window: the voice catalog, the two switches, and how the
   voice sounds: speed, expression (how much pitch varies), rhythm (how much
-  sound lengths vary), and the pause after each sentence.
+  sound lengths vary), and the pause after each sentence. Voices trained on
+  many people (LibriTTS has 904) get a speaker picker, remembered per voice.
 - **`talkback <command>`**, the same controls with no window, for keybindings.
 
 Settings live in `~/.config/talkback/settings.conf` and voices in
@@ -34,6 +35,7 @@ Settings live in `~/.config/talkback/settings.conf` and voices in
 | `/` | Search voices |
 | `I` | Show downloaded voices only |
 | `+` `-` | Speak faster or slower |
+| `[` `]` | Previous or next speaker of a multi-speaker voice, and play it |
 | `S` | Turn spoken replies on or off |
 | `V` | Turn dictation on or off |
 | `Esc` | Stop speaking |
@@ -46,6 +48,7 @@ Settings live in `~/.config/talkback/settings.conf` and voices in
 talkback speech [on|off|toggle|status] [--notify]
 talkback dictation [on|off|toggle|status] [--notify]
 talkback voice [NAME]
+talkback speaker [N]
 talkback say TEXT
 talkback stop
 talkback hook install

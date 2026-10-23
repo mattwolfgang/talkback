@@ -4,7 +4,7 @@
 #
 #   talkback-speak                         read Claude's last reply, if turned on
 #   talkback-speak --say TEXT [--voice NAME] [--speed N] [--expression N]
-#                  [--rhythm N] [--pause SECONDS]
+#                  [--rhythm N] [--pause SECONDS] [--speaker N]
 #   talkback-speak --stop                  stop whatever is playing
 
 config="${XDG_CONFIG_HOME:-$HOME/.config}/talkback/settings.conf"
@@ -27,6 +27,7 @@ speed=$(setting speed)
 expression=$(setting expression)
 rhythm=$(setting rhythm)
 pause=$(setting pause)
+speaker=
 text=
 
 while (($#)); do
@@ -38,6 +39,7 @@ while (($#)); do
     --expression) expression=$2; shift ;;
     --rhythm) rhythm=$2; shift ;;
     --pause) pause=$2; shift ;;
+    --speaker) speaker=$2; shift ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
   shift
@@ -70,6 +72,9 @@ text=$("$here/talkback-speech-text" <<<"$text")
 [[ -z $text ]] && exit 0
 
 voice=${voice:-en_US-lessac-medium}
+# Voices trained on many people pick one by number; the window saves a
+# choice per voice.
+speaker=${speaker:-$(setting "speaker.$voice")}
 model="$voices/$voice.onnx"
 if [[ ! -f $model ]]; then
   echo "Voice not installed: $voice" >&2
@@ -83,9 +88,9 @@ rate=$(jq -r '.audio.sample_rate // 22050' "$model.json" 2>/dev/null)
 stop_speaking
 setsid bash -c '
   piper-tts -m "$1" --length-scale "$2" --noise-scale "$3" --noise-w-scale "$4" --sentence-silence "$5" \
-    --output-raw 2>/dev/null | aplay -q -r "$6" -f S16_LE -c 1 -t raw
-  rm -f "$7"
-' _ "$model" "$length" "${expression:-0.667}" "${rhythm:-0.8}" "${pause:-0.3}" "${rate:-22050}" "$pidfile" \
+    --speaker "$6" --output-raw 2>/dev/null | aplay -q -r "$7" -f S16_LE -c 1 -t raw
+  rm -f "$8"
+' _ "$model" "$length" "${expression:-0.667}" "${rhythm:-0.8}" "${pause:-0.3}" "${speaker:-0}" "${rate:-22050}" "$pidfile" \
   <<<"$text" >/dev/null 2>&1 &
 echo $! >"$pidfile"
 exit 0

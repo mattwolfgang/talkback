@@ -50,6 +50,26 @@ void Settings::resetNaturalness() {
     emit changed();
 }
 
+QVariantMap Settings::speakers() const {
+    QVariantMap speakers;
+    for (auto it = m_speakers.cbegin(); it != m_speakers.cend(); ++it)
+        speakers.insert(it.key(), it.value());
+    return speakers;
+}
+
+void Settings::setSpeaker(const QString &voice, int speaker) {
+    speaker = qMax(0, speaker);
+    if (voice.isEmpty() || speakerFor(voice) == speaker)
+        return;
+    // Speaker 0 is Piper's default, so it needs no line in the file.
+    if (speaker == 0)
+        m_speakers.remove(voice);
+    else
+        m_speakers.insert(voice, speaker);
+    save();
+    emit changed();
+}
+
 void Settings::setNumber(double &field, double value, double low, double high) {
     // Two decimals is all the sliders show, and it keeps the file readable.
     value = std::round(qBound(low, value, high) * 100) / 100;
@@ -64,6 +84,7 @@ void Settings::reload() {
     bool enabled = true;
     QString voice = defaultVoice;
     double speed = 1.0, expression = defaultExpression, rhythm = defaultRhythm, pause = defaultPause;
+    QMap<QString, int> speakers;
     auto number = [](const QString &value, double &field, double low, double high) {
         bool ok = false;
         const double parsed = value.toDouble(&ok);
@@ -89,19 +110,26 @@ void Settings::reload() {
                 number(value, rhythm, 0.0, 1.5);
             else if (key == "pause")
                 number(value, pause, 0.0, 1.5);
+            else if (key.startsWith("speaker.") && key.size() > 8) {
+                bool ok = false;
+                const int speaker = value.toInt(&ok);
+                if (ok && speaker > 0)
+                    speakers.insert(key.mid(8), speaker);
+            }
         }
     }
 
     watch();
     const auto differs = [](double a, double b) { return !qFuzzyCompare(a + 1, b + 1); };
     if (enabled != m_enabled || voice != m_voice || differs(speed, m_speed) || differs(expression, m_expression) ||
-        differs(rhythm, m_rhythm) || differs(pause, m_pause)) {
+        differs(rhythm, m_rhythm) || differs(pause, m_pause) || speakers != m_speakers) {
         m_enabled = enabled;
         m_voice = voice;
         m_speed = speed;
         m_expression = expression;
         m_rhythm = rhythm;
         m_pause = pause;
+        m_speakers = speakers;
         emit changed();
     }
 }
@@ -127,10 +155,12 @@ bool Settings::save() {
         return false;
     }
     const auto number = [](double value) { return QString::number(value, 'f', 2); };
-    file.write(QStringLiteral("enabled=%1\nvoice=%2\nspeed=%3\nexpression=%4\nrhythm=%5\npause=%6\n")
-                   .arg(m_enabled ? "true" : "false", m_voice, number(m_speed), number(m_expression),
-                        number(m_rhythm), number(m_pause))
-                   .toUtf8());
+    QString contents = QStringLiteral("enabled=%1\nvoice=%2\nspeed=%3\nexpression=%4\nrhythm=%5\npause=%6\n")
+                           .arg(m_enabled ? "true" : "false", m_voice, number(m_speed), number(m_expression),
+                                number(m_rhythm), number(m_pause));
+    for (auto it = m_speakers.cbegin(); it != m_speakers.cend(); ++it)
+        contents += QStringLiteral("speaker.%1=%2\n").arg(it.key()).arg(it.value());
+    file.write(contents.toUtf8());
     if (!file.commit()) {
         m_error = file.errorString();
         return false;
