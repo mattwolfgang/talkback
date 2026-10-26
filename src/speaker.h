@@ -1,26 +1,26 @@
 #pragma once
 
-#include <QJsonObject>
 #include <QObject>
 
 class Settings;
 
-// Plays previews through talkback-speak, the same script Claude Code runs,
-// so a preview sounds exactly like a spoken reply. Also checks and installs
-// the Claude Code Stop hook that runs it.
+// Plays previews through talkback-speak, the same script the coding agents
+// run, so a preview sounds exactly like a spoken reply. Also checks and
+// installs the agents' hooks that run it (see Hooks).
 class Speaker : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool hookInstalled READ hookInstalled NOTIFY hookChanged)
     Q_PROPERTY(QString error READ error NOTIFY errorChanged)
 
 public:
-    explicit Speaker(const QString &claudeSettings = {}, QObject *parent = nullptr);
+    // `home` is where the agents keep their settings; the user's home by default.
+    explicit Speaker(const QString &home = {}, QObject *parent = nullptr);
 
     static QString speakCommand();
     // One of Talkback's helper scripts, from this checkout when developing.
     static QString helper(const QString &name);
-    static QString defaultClaudeSettings();
 
+    // Whether any agent runs talkback-speak.
     bool hookInstalled() const;
     QString error() const { return m_error; }
 
@@ -31,13 +31,8 @@ public:
     static QStringList sayArguments(const QString &text, const QString &engine, const QString &voice,
                                     const Settings &settings);
     Q_INVOKABLE void stop();
+    // Hooks every agent found under home, or Claude Code when none is.
     Q_INVOKABLE bool installHook();
-
-    static bool hasHook(const QJsonObject &settings);
-    // Settings with one Stop hook running talkback-speak, replacing any
-    // earlier one (including the speak-reply.sh this app grew out of) and
-    // leaving every other hook alone.
-    static QJsonObject withHook(QJsonObject settings);
 
 signals:
     void hookChanged();
@@ -46,6 +41,6 @@ signals:
 private:
     void setError(const QString &error);
 
-    QString m_claudeSettings;
+    QString m_home;
     QString m_error;
 };

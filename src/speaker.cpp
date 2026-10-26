@@ -2,29 +2,15 @@
 
 #include <QCoreApplication>
 #include <QDir>
-#include <QFile>
 #include <QFileInfo>
-#include <QJsonArray>
-#include <QJsonDocument>
 #include <QProcess>
-#include <QSaveFile>
 #include <QStandardPaths>
 
+#include "hooks.h"
 #include "settings.h"
 
-namespace {
-bool isOurs(const QJsonValue &hook) {
-    const QString command = hook.toObject().value("command").toString();
-    return command.contains("talkback-speak") || command.contains("speak-reply.sh");
-}
-}
-
-Speaker::Speaker(const QString &claudeSettings, QObject *parent)
-    : QObject(parent), m_claudeSettings(claudeSettings.isEmpty() ? defaultClaudeSettings() : claudeSettings) {}
-
-QString Speaker::defaultClaudeSettings() {
-    return QDir::homePath() + "/.claude/settings.json";
-}
+Speaker::Speaker(const QString &home, QObject *parent)
+    : QObject(parent), m_home(home.isEmpty() ? QDir::homePath() : home) {}
 
 // Next to the binary first, so a development build uses bin/talkback-speak
 // from its own checkout; the installed package puts both in /usr/bin.
@@ -61,73 +47,30 @@ void Speaker::stop() {
 }
 
 bool Speaker::hookInstalled() const {
-    QFile file(m_claudeSettings);
-    if (!file.open(QIODevice::ReadOnly))
-        return false;
-    return hasHook(QJsonDocument::fromJson(file.readAll()).object());
+    for (const QString &agent : Hooks::agents())
+        if (Hooks::installed(agent, m_home))
+            return true;
+    return false;
 }
 
 bool Speaker::installHook() {
-    QJsonObject settings;
-    QFile current(m_claudeSettings);
-    if (current.exists()) {
-        if (!current.open(QIODevice::ReadOnly)) {
-            setError(tr("Couldn't read %1.").arg(m_claudeSettings));
+    QStringList agents;
+    for (const QString &agent : Hooks::agents())
+        if (Hooks::detected(agent, m_home))
+            agents.append(agent);
+    if (agents.isEmpty())
+        agents.append("claude");
+    for (const QString &agent : agents) {
+        QString error;
+        if (!Hooks::install(agent, m_home, &error)) {
+            setError(error);
+            emit hookChanged();
             return false;
         }
-        QJsonParseError parseError;
-        const QJsonDocument document = QJsonDocument::fromJson(current.readAll(), &parseError);
-        // Never overwrite a settings file we can't read back faithfully.
-        if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
-            setError(tr("%1 isn't valid JSON, so it was left alone.").arg(m_claudeSettings));
-            return false;
-        }
-        settings = document.object();
-    }
-
-    QDir().mkpath(QFileInfo(m_claudeSettings).absolutePath());
-    QSaveFile file(m_claudeSettings);
-    if (!file.open(QIODevice::WriteOnly)) {
-        setError(file.errorString());
-        return false;
-    }
-    file.write(QJsonDocument(withHook(settings)).toJson(QJsonDocument::Indented));
-    if (!file.commit()) {
-        setError(file.errorString());
-        return false;
     }
     setError({});
     emit hookChanged();
     return true;
-}
-
-bool Speaker::hasHook(const QJsonObject &settings) {
-    for (const QJsonValue &group : settings.value("hooks").toObject().value("Stop").toArray())
-        for (const QJsonValue &hook : group.toObject().value("hooks").toArray())
-            if (hook.toObject().value("command").toString().contains("talkback-speak"))
-                return true;
-    return false;
-}
-
-QJsonObject Speaker::withHook(QJsonObject settings) {
-    QJsonObject hooks = settings.value("hooks").toObject();
-    QJsonArray stop;
-    for (const QJsonValue &group : hooks.value("Stop").toArray()) {
-        QJsonObject object = group.toObject();
-        QJsonArray kept;
-        for (const QJsonValue &hook : object.value("hooks").toArray())
-            if (!isOurs(hook))
-                kept.append(hook);
-        if (kept.isEmpty())
-            continue;
-        object["hooks"] = kept;
-        stop.append(object);
-    }
-    stop.append(QJsonObject{
-        {"hooks", QJsonArray{QJsonObject{{"type", "command"}, {"command", "talkback-speak"}, {"timeout", 10}}}}});
-    hooks["Stop"] = stop;
-    settings["hooks"] = hooks;
-    return settings;
 }
 
 void Speaker::setError(const QString &error) {

@@ -2,8 +2,9 @@
 
 ![Talkback](docs/screenshot.png)
 
-Talkback picks the voice that reads Claude Code's replies aloud, and turns
-spoken replies and Voxtype dictation on and off. It speaks with either of two
+Talkback picks the voice that reads your coding agent's replies aloud (Claude
+Code, Codex, Grok, Cursor, Antigravity or OMP), and turns spoken replies and
+Voxtype dictation on and off. It speaks with either of two
 local engines:
 
 - [Piper](https://github.com/OHF-Voice/piper1-gpl): fast and light, with
@@ -16,7 +17,7 @@ local engines:
 
 It has three parts:
 
-- **`talkback-speak`**, a Claude Code Stop hook that reads each finished reply
+- **`talkback-speak`**, the hook each agent runs to read its finished reply
   aloud with the chosen engine and plays previews (`talkback-kokoro` is the
   Kokoro side). `talkback-speech-text` first turns the
   Markdown into plain sentences: code blocks and tables are skipped, list
@@ -51,8 +52,12 @@ Settings live in `~/.config/talkback/settings.conf` and voices in
 | `?` | Show every shortcut |
 | `Q` | Quit |
 
-Two Hyprland keybindings work from anywhere (add them to
-`~/.config/hypr/bindings.lua`):
+Two Hyprland keybindings work from anywhere. On Omarchy, `talkback hook
+install` and the window's Set up button add them to
+`~/.config/hypr/bindings.lua`, skipping any key something else already uses.
+The window warns when one isn't bound, and Change keys picks new ones (or run
+`talkback keys toggle "SUPER + CTRL + T"`). Talkback finds the lines by their
+commands, so you can also edit them by hand. Elsewhere, add the equivalent of:
 
 ```lua
 o.bind("SUPER + ALT + X", "Toggle spoken replies", "talkback speech toggle --notify")
@@ -70,9 +75,25 @@ talkback kokoro install
 talkback speaker [N]
 talkback say TEXT
 talkback stop
-talkback hook install
+talkback hook install [claude|codex|grok|cursor|antigravity|omp|all] [--no-keys]
+talkback keys [install|toggle KEY|stop KEY]
 talkback status [--json]
 ```
+
+`talkback hook install` with no agent, or `all`, sets up every agent it finds
+in your home directory. Each hook lives where that agent looks for it:
+
+| Agent | Hook |
+| --- | --- |
+| Claude Code | Stop hook in `~/.claude/settings.json` |
+| Codex | Stop hook in `~/.codex/hooks.json`; approve it once in Codex's `/hooks` |
+| Grok | Stop hook in `~/.grok/hooks/talkback.json` |
+| Cursor | `afterAgentResponse` hook in `~/.cursor/hooks.json` |
+| Antigravity | Stop hook named `talkback` in `~/.gemini/config/hooks.json` |
+| OMP | Extension at `~/.omp/agent/extensions/talkback.ts` |
+
+Grok and Cursor can also run Claude Code's hooks. `talkback-speak` ignores
+those runs and uses each agent's own hook, so a reply is read only once.
 
 Dictation off stops Voxtype's user service, so the dictation keys do nothing
 until it's turned back on or you log in again.

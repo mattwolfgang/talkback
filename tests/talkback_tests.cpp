@@ -7,6 +7,8 @@
 #include <QtTest>
 
 #include "dictation.h"
+#include "hooks.h"
+#include "keybindings.h"
 #include "kokoro.h"
 #include "settings.h"
 #include "speaker.h"
@@ -204,29 +206,189 @@ private slots:
                          {"hooks": [{"type": "command", "command": "keep-me.sh"}]}]
             }
         })").object();
-        QVERIFY(!Speaker::hasHook(before));
+        for (const QString agent : {"claude", "codex", "grok"}) {
+            QVERIFY(!Hooks::hasHook(agent, before));
 
-        const QJsonObject after = Speaker::withHook(before);
-        QVERIFY(Speaker::hasHook(after));
-        QCOMPARE(after.value("theme").toString(), QString("dark"));
-        QCOMPARE(after.value("hooks").toObject().value("SessionStart"), before.value("hooks").toObject().value("SessionStart"));
-        const QJsonArray stop = after.value("hooks").toObject().value("Stop").toArray();
-        QCOMPARE(stop.size(), 2);
-        QVERIFY(!QJsonDocument(stop).toJson().contains("speak-reply.sh"));
-        QVERIFY(QJsonDocument(stop).toJson().contains("keep-me.sh"));
+            const QJsonObject after = Hooks::withHook(agent, before);
+            QVERIFY(Hooks::hasHook(agent, after));
+            QCOMPARE(after.value("theme").toString(), QString("dark"));
+            QCOMPARE(after.value("hooks").toObject().value("SessionStart"), before.value("hooks").toObject().value("SessionStart"));
+            const QJsonArray stop = after.value("hooks").toObject().value("Stop").toArray();
+            QCOMPARE(stop.size(), 2);
+            QVERIFY(!QJsonDocument(stop).toJson().contains("speak-reply.sh"));
+            QVERIFY(QJsonDocument(stop).toJson().contains("keep-me.sh"));
 
-        // Installing twice leaves one hook.
-        QCOMPARE(Speaker::withHook(after).value("hooks").toObject().value("Stop").toArray().size(), 2);
+            // Installing twice leaves one hook.
+            QCOMPARE(Hooks::withHook(agent, after).value("hooks").toObject().value("Stop").toArray().size(), 2);
+        }
+        // Claude's command stays what earlier versions installed; the others name their agent.
+        const auto command = [&](const QString &agent) {
+            return Hooks::withHook(agent, {}).value("hooks").toObject().value("Stop").toArray()
+                .at(0).toObject().value("hooks").toArray().at(0).toObject().value("command").toString();
+        };
+        QCOMPARE(command("claude"), QString("talkback-speak"));
+        QCOMPARE(command("codex"), QString("talkback-speak --agent codex"));
+    }
+
+    void cursorHookUsesTheResponseEvent()
+    {
+        const QJsonObject before = QJsonDocument::fromJson(R"({
+            "version": 1,
+            "hooks": {"afterAgentResponse": [{"command": "keep-me.sh"}], "stop": [{"command": "other.sh"}]}
+        })").object();
+        QVERIFY(!Hooks::hasHook("cursor", before));
+        const QJsonObject after = Hooks::withHook("cursor", Hooks::withHook("cursor", before));
+        QVERIFY(Hooks::hasHook("cursor", after));
+        const QJsonObject hooks = after.value("hooks").toObject();
+        QCOMPARE(hooks.value("stop"), before.value("hooks").toObject().value("stop"));
+        const QJsonArray responses = hooks.value("afterAgentResponse").toArray();
+        QCOMPARE(responses.size(), 2);
+        QCOMPARE(responses.at(1).toObject().value("command").toString(), QString("talkback-speak --agent cursor"));
+        QCOMPARE(Hooks::withHook("cursor", {}).value("version").toInt(), 1);
+    }
+
+    void antigravityHookIsItsOwnNamedHook()
+    {
+        const QJsonObject before = QJsonDocument::fromJson(R"({
+            "lint": {"PostToolUse": [{"matcher": "*", "hooks": [{"command": "lint.sh"}]}]}
+        })").object();
+        QVERIFY(!Hooks::hasHook("antigravity", before));
+        const QJsonObject after = Hooks::withHook("antigravity", before);
+        QVERIFY(Hooks::hasHook("antigravity", after));
+        QCOMPARE(after.value("lint"), before.value("lint"));
+        QCOMPARE(after.value("talkback").toObject().value("Stop").toArray().size(), 1);
+    }
+
+    void hookInstallWritesEachAgentsFile()
+    {
+        QTemporaryDir home;
+        for (const QString &agent : Hooks::agents()) {
+            QVERIFY(!Hooks::installed(agent, home.path()));
+            QString error;
+            QVERIFY2(Hooks::install(agent, home.path(), &error), qPrintable(error));
+            QVERIFY2(Hooks::installed(agent, home.path()), qPrintable(agent));
+        }
+        QVERIFY(read(home.filePath(".omp/agent/extensions/talkback.ts")).contains("agent_end"));
+        QVERIFY(QFile::exists(home.filePath(".grok/hooks/talkback.json")));
+    }
+
+    void installHookPicksTheAgentsFound()
+    {
+        QTemporaryDir home;
+        QDir(home.path()).mkpath(".codex");
+        QDir(home.path()).mkpath(".gemini");
+        Speaker speaker(home.path());
+        QVERIFY(!speaker.hookInstalled());
+        QVERIFY(speaker.installHook());
+        QVERIFY(speaker.hookInstalled());
+        QVERIFY(Hooks::installed("codex", home.path()));
+        // ~/.gemini alone is the Gemini CLI, not Antigravity.
+        QVERIFY(!Hooks::installed("antigravity", home.path()));
+        QVERIFY(!Hooks::installed("claude", home.path()));
     }
 
     void hookInstallRefusesBrokenJson()
     {
-        QTemporaryDir dir;
-        const QString path = dir.filePath("settings.json");
+        QTemporaryDir home;
+        QDir(home.path()).mkpath(".claude");
+        const QString path = home.filePath(".claude/settings.json");
         write(path, "{ not json");
-        Speaker speaker(path);
+        Speaker speaker(home.path());
         QVERIFY(!speaker.installHook());
         QCOMPARE(read(path), QByteArray("{ not json"));
+    }
+
+    void keysAreFoundByTheirCommands()
+    {
+        const QString lua = "-- o.bind(\"SUPER + Q\", \"Old\", \"talkback-speak --stop\")\n"
+                            "o.bind(\"super + alt + x\", \"Mine\", \"talkback speech toggle --notify\")\n";
+        QCOMPARE(Keybindings::keyIn(lua, "toggle"), QString("SUPER + ALT + X"));
+        // Commented-out lines don't count.
+        QCOMPARE(Keybindings::keyIn(lua, "stop"), QString());
+
+        const QString changed = Keybindings::withKey(lua, "toggle", "SUPER + CTRL + T");
+        QVERIFY(changed.contains("o.bind(\"SUPER + CTRL + T\", \"Mine\", \"talkback speech toggle --notify\")"));
+        // A missing key goes right after the other one.
+        const QString added = Keybindings::withKey(changed, "stop", "SUPER + ALT + ESCAPE");
+        QCOMPARE(added.split('\n').at(2), QString("o.bind(\"SUPER + ALT + ESCAPE\", \"Stop speaking\", \"talkback-speak --stop\")"));
+        // With neither, both go under a heading at the end.
+        const QString fresh = Keybindings::withKey("-- mine", "stop", "SUPER + ALT + ESCAPE");
+        QCOMPARE(fresh, QString("-- mine\n\n-- Talkback\no.bind(\"SUPER + ALT + ESCAPE\", \"Stop speaking\", \"talkback-speak --stop\")\n"));
+    }
+
+    void keyCombosNormalizeAndLabel()
+    {
+        QCOMPARE(Keybindings::normalize(" super+alt + escape "), QString("SUPER + ALT + ESCAPE"));
+        QCOMPARE(Keybindings::normalize("SUPER + HYPER + X"), QString());
+        QCOMPARE(Keybindings::normalize("SUPER + ALT"), QString());
+        QCOMPARE(Keybindings::modmask("SUPER + ALT + X"), 72);
+        Keybindings keys(QDir::tempPath() + "/talkback-no-bindings.lua", "false");
+        QCOMPARE(keys.label("SUPER + ALT + ESCAPE"), QString("Super + Alt + Esc"));
+        QCOMPARE(keys.label("CTRL + SPACE"), QString("Ctrl + Space"));
+        QCOMPARE(keys.keyName(Qt::Key_X), QString("X"));
+        QCOMPARE(keys.keyName(Qt::Key_Escape), QString("ESCAPE"));
+        QCOMPARE(keys.keyName(Qt::Key_Alt), QString());
+    }
+
+    void keyHolderSkipsTalkbacksOwn()
+    {
+        const QByteArray binds = R"([
+            {"modmask": 72, "key": "ESCAPE", "submap": "", "description": "Stop speaking"},
+            {"modmask": 72, "key": "K", "submap": "", "description": "Tmux keybindings"},
+            {"modmask": 72, "key": "J", "submap": "resize", "description": "Only in a submap"}
+        ])";
+        QCOMPARE(Keybindings::holder(binds, "SUPER + ALT + ESCAPE", "stop"), QString());
+        QCOMPARE(Keybindings::holder(binds, "SUPER + ALT + ESCAPE", "toggle"), QString("Stop speaking"));
+        QCOMPARE(Keybindings::holder(binds, "super + alt + k", "stop"), QString("Tmux keybindings"));
+        QCOMPARE(Keybindings::holder(binds, "SUPER + ALT + J", "stop"), QString());
+    }
+
+    void keysInstallSkipsTakenKeys()
+    {
+        QTemporaryDir dir;
+        const QString lua = dir.filePath("bindings.lua");
+        write(lua, "-- Keep only your personal keybinding overrides here.\no.bind(\"SUPER + B\", \"Browser\", \"x\")\n");
+        write(dir.filePath("binds.json"), R"([{"modmask": 72, "key": "X", "submap": "", "description": "Something else"}])");
+        const QString hyprctl = fakeHyprctl(dir);
+
+        Keybindings keys(lua, hyprctl);
+        QVERIFY(keys.available());
+        QVERIFY(!keys.install());
+        QVERIFY(keys.error().contains("Something else"));
+        QCOMPARE(keys.toggleKey(), QString());
+        QCOMPARE(keys.stopKey(), QString("SUPER + ALT + ESCAPE"));
+        QVERIFY(read(lua).startsWith("-- Keep only your personal keybinding overrides here.\no.bind(\"SUPER + B\""));
+
+        QVERIFY(!keys.setKey("toggle", "X"));
+        QVERIFY(!keys.setKey("toggle", "SUPER + ALT + X"));
+        QVERIFY2(keys.setKey("toggle", "SUPER + CTRL + T"), qPrintable(keys.error()));
+        QCOMPARE(keys.toggleKey(), QString("SUPER + CTRL + T"));
+        QCOMPARE(Keybindings::keyIn(read(lua), "toggle"), QString("SUPER + CTRL + T"));
+    }
+
+    void keysChangeHyprlandRejectsIsUndone()
+    {
+        QTemporaryDir dir;
+        const QString lua = dir.filePath("bindings.lua");
+        const QByteArray before = "o.bind(\"SUPER + ALT + ESCAPE\", \"Stop speaking\", \"talkback-speak --stop\")\n";
+        write(lua, before);
+        write(dir.filePath("binds.json"), "[]");
+        // This Hyprland reports an error after every reload.
+        write(dir.filePath("errors-after-reload"), "bindings.lua:1: bad key");
+        Keybindings keys(lua, fakeHyprctl(dir));
+        QVERIFY(!keys.setKey("stop", "SUPER + ALT + Q"));
+        QVERIFY(keys.error().contains("bad key"));
+        QCOMPARE(read(lua), before);
+        QCOMPARE(keys.stopKey(), QString("SUPER + ALT + ESCAPE"));
+    }
+
+    void keysNeedOmarchysConfig()
+    {
+        QTemporaryDir dir;
+        write(dir.filePath("bindings.lua"), "bind = SUPER, X, exec, foo\n");
+        Keybindings keys(dir.filePath("bindings.lua"), fakeHyprctl(dir));
+        QVERIFY(!keys.available());
+        QVERIFY(!keys.install());
     }
 
     // QML can't call a method whose parameter types it doesn't know; it fails
@@ -236,9 +398,10 @@ private slots:
         Settings settings(QDir::tempPath() + "/talkback-unused.conf");
         Voices voices(QDir::tempPath() + "/talkback-no-voices", QDir::tempPath() + "/talkback-no-cache.json");
         Dictation dictation("true");
-        Speaker speaker(QDir::tempPath() + "/talkback-no-claude.json");
+        Speaker speaker(QDir::tempPath() + "/talkback-no-home");
         Kokoro kokoro;
-        for (const QObject *object : std::initializer_list<const QObject *>{&settings, &voices, &dictation, &speaker, &kokoro}) {
+        Keybindings keybindings(QDir::tempPath() + "/talkback-no-bindings.lua", "false");
+        for (const QObject *object : std::initializer_list<const QObject *>{&settings, &voices, &dictation, &speaker, &kokoro, &keybindings}) {
             const QMetaObject *meta = object->metaObject();
             for (int i = meta->methodOffset(); i < meta->methodCount(); ++i) {
                 const QMetaMethod method = meta->method(i);
@@ -294,6 +457,23 @@ private:
         QFile file(path);
         QVERIFY(file.open(QIODevice::WriteOnly));
         file.write(contents);
+    }
+
+    // Stands in for hyprctl: binds come from binds.json, and after a reload
+    // configerrors prints errors-after-reload when there is one.
+    static QString fakeHyprctl(const QTemporaryDir &dir)
+    {
+        const QString path = dir.filePath("hyprctl");
+        write(path, QString(R"(#!/bin/sh
+cd '%1'
+case $1 in
+  binds) cat binds.json 2>/dev/null || echo '[]' ;;
+  reload) touch reloaded ;;
+  configerrors) [ -f reloaded ] && cat errors-after-reload 2>/dev/null; echo ;;
+esac
+)").arg(dir.path()).toUtf8());
+        QFile::setPermissions(path, QFile::permissions(path) | QFileDevice::ExeOwner);
+        return path;
     }
 
     static QByteArray read(const QString &path)

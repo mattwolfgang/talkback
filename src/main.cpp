@@ -1,4 +1,4 @@
-// talkback — pick the Piper or Kokoro voice that reads Claude's replies
+// talkback — pick the Piper or Kokoro voice that reads coding agents' replies
 // aloud, and turn spoken replies and Voxtype dictation on and off.
 
 #include <QGuiApplication>
@@ -10,6 +10,7 @@
 
 #include "cli.h"
 #include "dictation.h"
+#include "keybindings.h"
 #include "kokoro.h"
 #include "settings.h"
 #include "speaker.h"
@@ -49,6 +50,7 @@ int main(int argc, char *argv[]) {
     Dictation dictation;
     Speaker speaker;
     Kokoro kokoro;
+    Keybindings keybindings;
 
     QQmlApplicationEngine engine;
     QObject::connect(&translator, &Translator::changed, &engine, &QQmlEngine::retranslate);
@@ -59,6 +61,7 @@ int main(int argc, char *argv[]) {
     engine.rootContext()->setContextProperty("dictation", &dictation);
     engine.rootContext()->setContextProperty("speaker", &speaker);
     engine.rootContext()->setContextProperty("kokoro", &kokoro);
+    engine.rootContext()->setContextProperty("keybindings", &keybindings);
     engine.load(QUrl("qrc:/Main.qml"));
     if (engine.rootObjects().isEmpty())
         return 1;

@@ -1,8 +1,9 @@
 #!/bin/bash
-# Speaks text with Piper or Kokoro. Claude Code runs it as a Stop hook (the hook's JSON
-# arrives on stdin); Talkback runs it to preview voices.
+# Speaks text with Piper or Kokoro. Coding agents run it as a hook when a reply
+# finishes (the hook's JSON arrives on stdin); Talkback runs it to preview voices.
 #
-#   talkback-speak                         read Claude's last reply, if turned on
+#   talkback-speak [--agent NAME]          read the agent's last reply, if turned on
+#                                          (claude, codex, grok, cursor, antigravity, omp)
 #   talkback-speak --say TEXT [--engine piper|kokoro] [--voice NAME] [--speed N]
 #                  [--expression N] [--rhythm N] [--pause SECONDS] [--speaker N]
 #   talkback-speak --stop                  stop whatever is playing
@@ -30,12 +31,14 @@ expression=$(setting expression)
 rhythm=$(setting rhythm)
 pause=$(setting pause)
 speaker=
+agent=claude
 text=
 
 while (($#)); do
   case $1 in
     --stop) stop_speaking; exit 0 ;;
     --say) text=$2; shift ;;
+    --agent) agent=$2; shift ;;
     --engine) engine=$2; shift ;;
     --voice) voice=$2; shift ;;
     --speed) speed=$2; shift ;;
@@ -53,18 +56,48 @@ if [[ -z $text ]]; then
   [[ $(setting enabled) == false ]] && exit 0
 
   input=$(cat)
-  [[ $(jq -r '.stop_hook_active // false' <<<"$input") == true ]] && exit 0
-
-  text=$(jq -r '.last_assistant_message // empty' <<<"$input")
-  if [[ -z $text ]]; then
-    # Older Claude Code: pull the last assistant text from the transcript.
-    transcript=$(jq -r '.transcript_path // empty' <<<"$input")
-    [[ -f $transcript ]] || exit 0
-    text=$(jq -rs '
-      map(select(.type == "assistant")) | last | .message.content
-      | if type == "array" then map(select(.type == "text") | .text) | join("\n") else . end
-    ' "$transcript")
-  fi
+  case $agent in
+    claude)
+      # Grok and Cursor also run Claude's hooks; they have their own.
+      [[ $(jq -r 'has("hookEventName") or has("cursor_version")' <<<"$input") == true ]] && exit 0
+      [[ $(jq -r '.stop_hook_active // false' <<<"$input") == true ]] && exit 0
+      text=$(jq -r '.last_assistant_message // empty' <<<"$input")
+      if [[ -z $text ]]; then
+        # Older Claude Code: pull the last assistant text from the transcript.
+        transcript=$(jq -r '.transcript_path // empty' <<<"$input")
+        [[ -f $transcript ]] || exit 0
+        text=$(jq -rs '
+          map(select(.type == "assistant")) | last | .message.content
+          | if type == "array" then map(select(.type == "text") | .text) | join("\n") else . end
+        ' "$transcript")
+      fi
+      ;;
+    codex | omp)
+      [[ $(jq -r '.stop_hook_active // false' <<<"$input") == true ]] && exit 0
+      text=$(jq -r '.last_assistant_message // empty' <<<"$input")
+      ;;
+    grok)
+      # Grok also fires Stop when the session closes; only a finished turn counts.
+      [[ $(jq -r '.stopHookActive // false' <<<"$input") == true ]] && exit 0
+      [[ $(jq -r '.reason // "end_turn"' <<<"$input") == end_turn ]] || exit 0
+      text=$(jq -r '.lastAssistantMessage // empty' <<<"$input")
+      ;;
+    cursor)
+      text=$(jq -r '.text // empty' <<<"$input")
+      ;;
+    antigravity)
+      # Its Stop hook carries no reply, so read the model's last step from the
+      # transcript (the full one when it's there, since the compact one cuts long text).
+      [[ $(jq -r '.terminationReason // empty' <<<"$input") == NO_TOOL_CALL ]] || exit 0
+      transcript=$(jq -r '.transcriptPath // empty' <<<"$input")
+      [[ -f ${transcript%.jsonl}_full.jsonl ]] && transcript=${transcript%.jsonl}_full.jsonl
+      [[ -f $transcript ]] || exit 0
+      text=$(jq -rs '
+        map(select(.type | tostring | endswith("PLANNER_RESPONSE"))) | last | .content // empty
+      ' "$transcript")
+      ;;
+    *) echo "Unknown agent: $agent" >&2; exit 1 ;;
+  esac
   [[ -z $text || $text == null ]] && exit 0
 fi
 

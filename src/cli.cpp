@@ -1,12 +1,15 @@
 #include "cli.h"
 
 #include <QCoreApplication>
+#include <QDir>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QProcess>
 #include <QTextStream>
 
 #include "dictation.h"
+#include "hooks.h"
+#include "keybindings.h"
 #include "kokoro.h"
 #include "settings.h"
 #include "speaker.h"
@@ -27,7 +30,7 @@ const char *usage =
     "Usage: talkback [command]\n"
     "\n"
     "  open                                  open the window (the default)\n"
-    "  speech [on|off|toggle|status]         read Claude's replies aloud\n"
+    "  speech [on|off|toggle|status]         read the coding agents' replies aloud\n"
     "  dictation [on|off|toggle|status]      let Voxtype listen for the dictation keys\n"
     "  engine [piper|kokoro]                 show or set the speech engine\n"
     "  voice [NAME]                          show or set the engine's voice\n"
@@ -35,7 +38,11 @@ const char *usage =
     "  speaker [N]                           show or set the speaker of a multi-speaker voice\n"
     "  say TEXT                              speak TEXT with the current voice\n"
     "  stop                                  stop speaking\n"
-    "  hook install                          set up the Claude Code Stop hook\n"
+    "  hook install [AGENT|all]              set up the hook that reads an agent's replies: claude,\n"
+    "                                        codex, grok, cursor, antigravity, omp, or all found (default);\n"
+    "                                        also binds the keys below unless given --no-keys\n"
+    "  keys [install|toggle KEY|stop KEY]    show, bind, or change the Hyprland keys that work from\n"
+    "                                        anywhere, like: talkback keys stop \"SUPER + ALT + ESCAPE\"\n"
     "  status [--json]                       show everything above\n"
     "\n"
     "Add --notify to speech or dictation to show the result as a desktop notification.\n";
@@ -49,6 +56,12 @@ std::pair<bool, bool> dictationState() {
     query.start("systemctl", {"--user", "show", "voxtype.service", "-p", "LoadState,ActiveState", "--value"});
     query.waitForFinished(5000);
     return Dictation::parseState(query.readAllStandardOutput());
+}
+
+void printKeys(const Keybindings &keys) {
+    const auto describe = [&](const QString &key) { return key.isEmpty() ? QString("not bound") : keys.label(key); };
+    out() << "Toggle spoken replies: " << describe(keys.toggleKey()) << "\n"
+          << "Stop speaking:         " << describe(keys.stopKey()) << "\n";
 }
 
 // on, off, toggle, or status (empty); -1 for anything else.
@@ -69,6 +82,7 @@ int runCli(const QStringList &all) {
     QStringList arguments = all.mid(1);
     const bool json = arguments.removeAll("--json") > 0;
     const bool shouldNotify = arguments.removeAll("--notify") > 0;
+    const bool noKeys = arguments.removeAll("--no-keys") > 0;
     const QString command = arguments.value(0);
     const QString argument = arguments.value(1);
 
@@ -216,18 +230,74 @@ int runCli(const QStringList &all) {
     }
 
     if (command == "hook" && argument == "install") {
-        Speaker speaker;
-        if (!speaker.installHook()) {
-            err() << speaker.error() << "\n";
+        const QString home = QDir::homePath();
+        const QString wanted = arguments.value(2, "all");
+        QStringList agents;
+        if (wanted == "all") {
+            for (const QString &agent : Hooks::agents())
+                if (Hooks::detected(agent, home))
+                    agents.append(agent);
+            if (agents.isEmpty()) {
+                err() << "Found no coding agents. Name one, like: talkback hook install claude\n";
+                return 1;
+            }
+        } else if (Hooks::agents().contains(wanted)) {
+            agents.append(wanted);
+        } else {
+            err() << "Not an agent Talkback knows: " << wanted << ". Pick one of "
+                  << Hooks::agents().join(", ") << ", or all.\n";
             return 1;
         }
-        out() << "Installed the Stop hook in " << Speaker::defaultClaudeSettings() << "\n";
-        return 0;
+        bool ok = true;
+        for (const QString &agent : agents) {
+            QString error;
+            if (!Hooks::install(agent, home, &error)) {
+                err() << Hooks::displayName(agent) << ": " << error << "\n";
+                ok = false;
+                continue;
+            }
+            out() << "Installed the " << Hooks::displayName(agent) << " hook in " << Hooks::path(agent, home) << "\n";
+            if (agent == "codex")
+                out() << "  Codex asks you to review new hooks before they run: approve it in /hooks.\n";
+        }
+        if (!noKeys) {
+            // The hooks are what matters; a key that can't be bound is only a warning.
+            Keybindings keys;
+            if (!keys.install())
+                err() << keys.error() << "\n";
+            printKeys(keys);
+        }
+        return ok ? 0 : 1;
+    }
+
+    if (command == "keys") {
+        Keybindings keys;
+        bool ok = true;
+        if (argument == "install")
+            ok = keys.install();
+        else if (argument == "toggle" || argument == "stop")
+            ok = keys.setKey(argument, arguments.mid(2).join(' '));
+        else if (!argument.isEmpty()) {
+            err() << usage;
+            return 1;
+        }
+        if (!ok)
+            err() << keys.error() << "\n";
+        printKeys(keys);
+        return ok ? 0 : 1;
     }
 
     if (command == "status") {
         Settings settings;
         const auto [available, active] = dictationState();
+        QJsonObject hooks;
+        QStringList hooked;
+        for (const QString &agent : Hooks::agents()) {
+            hooks[agent] = Hooks::installed(agent, QDir::homePath());
+            if (hooks[agent].toBool())
+                hooked.append(agent);
+        }
+        Keybindings keys;
         const QJsonObject status{
             {"speech", settings.enabled()},
             {"engine", settings.engine()},
@@ -240,7 +310,10 @@ int runCli(const QStringList &all) {
             {"voiceInstalled", settings.engine() == "kokoro"
                                    ? QProcess::execute(Speaker::helper("talkback-kokoro-setup"), {"--check"}) == 0
                                    : Voices::scanInstalled(Voices::defaultVoiceDirectory()).contains(settings.voice())},
-            {"hookInstalled", Speaker().hookInstalled()},
+            {"hookInstalled", !hooked.isEmpty()},
+            {"hooks", hooks},
+            {"toggleKey", keys.toggleKey()},
+            {"stopKey", keys.stopKey()},
             {"dictationAvailable", available},
             {"dictation", active},
         };
@@ -256,7 +329,9 @@ int runCli(const QStringList &all) {
                   << "Rhythm:         " << QString::number(settings.rhythm(), 'f', 2) << "\n"
                   << "Pause:          " << QString::number(settings.pause(), 'f', 2) << " s\n"
                   << "Speaker:        " << settings.speaker() << "\n"
-                  << "Claude hook:    " << (status.value("hookInstalled").toBool() ? "installed" : "missing") << "\n"
+                  << "Hooks:          " << (hooked.isEmpty() ? "none" : hooked.join(", ")) << "\n"
+                  << "Toggle key:     " << (keys.toggleKey().isEmpty() ? "not bound" : keys.label(keys.toggleKey())) << "\n"
+                  << "Stop key:       " << (keys.stopKey().isEmpty() ? "not bound" : keys.label(keys.stopKey())) << "\n"
                   << "Dictation:      " << (!available ? "Voxtype not installed" : active ? "on" : "off") << "\n";
         }
         return 0;

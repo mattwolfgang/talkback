@@ -23,8 +23,10 @@ ApplicationWindow {
     readonly property color warningColor: "#ff8a80"
 
     property bool helpVisible: false
+    // Recording a new key for the keys dialog; every shortcut stands aside.
+    readonly property bool capturing: keysDialog.capturing !== ""
     // Single-letter shortcuts stand aside while a text field has the keys.
-    readonly property bool typing: activeFocusItem !== null && activeFocusItem.hasOwnProperty("cursorPosition")
+    readonly property bool typing: capturing || (activeFocusItem !== null && activeFocusItem.hasOwnProperty("cursorPosition"))
     readonly property bool kokoroMode: settings.engine === "kokoro"
     readonly property string currentVoiceKey: kokoroMode ? settings.kokoroVoice : settings.voice
     readonly property var listModel: kokoroMode ? kokoro.voices : voices.voices
@@ -127,9 +129,10 @@ ApplicationWindow {
     Shortcut { sequence: "["; enabled: !win.typing; context: Qt.ApplicationShortcut; onActivated: win.stepSpeaker(-1) }
     Shortcut { sequence: "]"; enabled: !win.typing; context: Qt.ApplicationShortcut; onActivated: win.stepSpeaker(1) }
     Shortcut { sequence: "/"; enabled: !win.typing; context: Qt.ApplicationShortcut; onActivated: searchField.forceActiveFocus() }
-    Shortcut { sequences: [StandardKey.Find]; context: Qt.ApplicationShortcut; onActivated: searchField.forceActiveFocus() }
+    Shortcut { sequences: [StandardKey.Find]; enabled: !win.capturing; context: Qt.ApplicationShortcut; onActivated: searchField.forceActiveFocus() }
     Shortcut {
         sequence: "Escape"
+        enabled: !win.capturing
         context: Qt.ApplicationShortcut
         onActivated: {
             if (win.helpVisible)
@@ -257,6 +260,86 @@ ApplicationWindow {
         onAccepted: voices.remove(key)
     }
 
+    Dialog {
+        id: keysDialog
+        // "toggle" or "stop" while recording that action's new key.
+        property string capturing: ""
+        anchors.centerIn: parent
+        width: Math.min(win.width - 40, 520)
+        modal: true
+        title: qsTr("Keys that work from anywhere")
+        standardButtons: Dialog.Close
+        // Esc can be part of a key, so it only closes the dialog between recordings.
+        closePolicy: capturing ? Popup.NoAutoClose : Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        Material.roundedScale: theme.radius
+        onClosed: capturing = ""
+
+        ColumnLayout {
+            width: parent.width
+            spacing: 10
+
+            Repeater {
+                model: [
+                    { action: "toggle", name: qsTr("Turn spoken replies on or off") },
+                    { action: "stop", name: qsTr("Stop speaking") }
+                ]
+                delegate: RowLayout {
+                    required property var modelData
+                    readonly property string key: modelData.action === "toggle" ? keybindings.toggleKey : keybindings.stopKey
+                    readonly property bool recording: keysDialog.capturing === modelData.action
+                    Layout.fillWidth: true
+                    spacing: 12
+                    Label { text: parent.modelData.name; Layout.fillWidth: true; wrapMode: Text.WordWrap }
+                    Label {
+                        text: parent.recording ? qsTr("Press keys…") : parent.key ? keybindings.label(parent.key) : qsTr("Not bound")
+                        color: parent.key || parent.recording ? Material.accentColor : win.warningColor
+                        font.family: "monospace"
+                    }
+                    AppButton {
+                        text: parent.recording ? qsTr("Cancel") : qsTr("Change")
+                        onClicked: {
+                            keysDialog.capturing = parent.recording ? "" : parent.modelData.action
+                            catcher.forceActiveFocus()
+                        }
+                    }
+                }
+            }
+
+            Hint {
+                text: keysDialog.capturing
+                    ? qsTr("Hold Super, Alt or Ctrl and press a key. Keys Hyprland already uses don't reach this window. Esc on its own cancels.")
+                    : qsTr("Saved in your Hyprland bindings, which reload right away.")
+            }
+            Hint { visible: text.length > 0; text: keybindings.error; color: win.warningColor }
+
+            // Takes the keys while recording, so they reach no other control.
+            Item {
+                id: catcher
+                Keys.onPressed: event => {
+                    if (!keysDialog.capturing)
+                        return
+                    event.accepted = true
+                    const parts = []
+                    if (event.modifiers & Qt.MetaModifier) parts.push("SUPER")
+                    if (event.modifiers & Qt.ControlModifier) parts.push("CTRL")
+                    if (event.modifiers & Qt.AltModifier) parts.push("ALT")
+                    if (event.modifiers & Qt.ShiftModifier) parts.push("SHIFT")
+                    if (event.key === Qt.Key_Escape && parts.length === 0) {
+                        keysDialog.capturing = ""
+                        return
+                    }
+                    // Empty for a modifier on its own: wait for the key.
+                    const key = keybindings.keyName(event.key)
+                    if (!key)
+                        return
+                    parts.push(key)
+                    if (keybindings.setKey(keysDialog.capturing, parts.join(" + ")))
+                        keysDialog.capturing = ""
+                }
+            }
+        }
+    }
+
     // Right-to-left languages mirror the window; the Translator sets the
     // application's layout direction.
     Item {
@@ -286,8 +369,11 @@ ApplicationWindow {
 
                 ToggleCard {
                     heading: qsTr("Spoken replies")
-                    detail: qsTr("Read Claude's replies aloud when they finish.")
-                    keys: qsTr("S here · Super + Alt + X anywhere · Super + Alt + Esc stops a reply")
+                    detail: qsTr("Read your coding agents' replies aloud when they finish.")
+                    keys: [qsTr("S here"),
+                           keybindings.toggleKey ? qsTr("%1 anywhere").arg(keybindings.label(keybindings.toggleKey)) : "",
+                           keybindings.stopKey ? qsTr("%1 stops a reply").arg(keybindings.label(keybindings.stopKey)) : ""]
+                          .filter(part => part.length > 0).join(" · ")
                     on: settings.enabled
                     note: speaker.error
                     onToggled: on => settings.enabled = on
@@ -295,13 +381,45 @@ ApplicationWindow {
                     RowLayout {
                         visible: !speaker.hookInstalled
                         Layout.fillWidth: true
-                        Hint { text: qsTr("Claude Code isn't set up to use Talkback yet."); color: win.warningColor }
+                        Hint { text: qsTr("No coding agent is set up to use Talkback yet."); color: win.warningColor }
                         AppButton {
                             text: qsTr("Set up")
                             Material.background: Material.accentColor
                             Material.foreground: theme.accentForeground
                             Material.roundedScale: theme.radius
-                            onClicked: speaker.installHook()
+                            onClicked: {
+                                speaker.installHook()
+                                if (keybindings.available)
+                                    keybindings.install()
+                            }
+                        }
+                    }
+
+                    RowLayout {
+                        readonly property bool missing: !keybindings.toggleKey || !keybindings.stopKey
+                        visible: missing || keybindings.available
+                        Layout.fillWidth: true
+                        Hint {
+                            text: !parent.missing ? ""
+                                : !keybindings.available ? qsTr("No keys work from anywhere yet. Add them to your Hyprland config; the README has the lines.")
+                                : !keybindings.toggleKey && !keybindings.stopKey ? qsTr("The keys that work from anywhere aren't bound yet.")
+                                : !keybindings.stopKey ? qsTr("No key stops a reply from anywhere yet.")
+                                : qsTr("No key turns spoken replies on and off from anywhere yet.")
+                            color: win.warningColor
+                        }
+                        AppButton {
+                            visible: parent.missing && keybindings.available
+                            text: qsTr("Bind keys")
+                            Material.background: Material.accentColor
+                            Material.foreground: theme.accentForeground
+                            // A default key that's taken needs picking by hand.
+                            onClicked: if (!keybindings.install()) keysDialog.open()
+                        }
+                        AppButton {
+                            visible: keybindings.available
+                            text: qsTr("Change keys")
+                            flat: true
+                            onClicked: keysDialog.open()
                         }
                     }
                 }
@@ -695,10 +813,9 @@ ApplicationWindow {
                                 ["V", qsTr("Turn dictation on or off")],
                                 ["Esc", qsTr("Stop speaking")],
                                 ["?", qsTr("Show or hide this list")],
-                                ["Q", qsTr("Quit")],
-                                ["Super + Alt + X", qsTr("Spoken replies, from anywhere")],
-                                ["Super + Alt + Esc", qsTr("Stop speaking, from anywhere")]
-                            ]
+                                ["Q", qsTr("Quit")]
+                            ].concat(keybindings.toggleKey ? [[keybindings.label(keybindings.toggleKey), qsTr("Spoken replies, from anywhere")]] : [])
+                             .concat(keybindings.stopKey ? [[keybindings.label(keybindings.stopKey), qsTr("Stop speaking, from anywhere")]] : [])
                             delegate: RowLayout {
                                 required property var modelData
                                 Layout.columnSpan: 2

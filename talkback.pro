@@ -7,6 +7,8 @@ TEMPLATE = app
 HEADERS += \
     src/cli.h \
     src/dictation.h \
+    src/hooks.h \
+    src/keybindings.h \
     src/kokoro.h \
     src/settings.h \
     src/speaker.h \
@@ -18,6 +20,8 @@ SOURCES += \
     src/main.cpp \
     src/cli.cpp \
     src/dictation.cpp \
+    src/hooks.cpp \
+    src/keybindings.cpp \
     src/kokoro.cpp \
     src/settings.cpp \
     src/speaker.cpp \
