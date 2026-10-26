@@ -106,7 +106,7 @@ have. pacman fetches the other dependencies itself:
 
 ```sh
 cd "$(mktemp -d)"
-url=https://github.com/mattwolfgang/talkback/releases/download/v0.1.0
+url=https://github.com/mattwolfgang/talkback/releases/download/v0.2.0
 curl -fsSLO "$url/SHA256SUMS"
 for file in $(awk '{print $2}' SHA256SUMS); do curl -fsSLO "$url/$file"; done
 sha256sum -c SHA256SUMS
