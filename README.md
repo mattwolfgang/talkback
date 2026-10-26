@@ -77,7 +77,27 @@ talkback status [--json]
 Dictation off stops Voxtype's user service, so the dictation keys do nothing
 until it's turned back on or you log in again.
 
-## Build and install
+## Install
+
+Each release has prebuilt x86_64 packages. They include `piper-tts` and
+`python-pathvalidate`, which Talkback needs but the Arch repositories don't
+have. pacman fetches the other dependencies itself:
+
+```sh
+cd "$(mktemp -d)"
+url=https://github.com/mattwolfgang/talkback/releases/download/v0.1.0
+curl -fsSLO "$url/SHA256SUMS"
+for file in $(awk '{print $2}' SHA256SUMS); do curl -fsSLO "$url/$file"; done
+sha256sum -c SHA256SUMS
+sudo pacman -U *.pkg.tar.zst
+talkback hook install
+```
+
+The packages aren't signed, so pacman can't install them straight from their
+URLs. The commands above download them and check them against `SHA256SUMS`
+first.
+
+## Build from source
 
 ```sh
 bin/build     # build/talkback
