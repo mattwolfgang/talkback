@@ -1,5 +1,5 @@
 pkgname=talkback
-pkgver=0.2.0
+pkgver=0.3.0
 pkgrel=1
 pkgdesc='Pick the Kokoro or Piper voice that reads coding agent replies aloud, and switch spoken replies per agent'
 arch=('x86_64' 'aarch64')

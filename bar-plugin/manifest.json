@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "io.github.mattwolfgang.talkback",
   "name": "Talkback",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "author": "Matt Wolfgang",
   "license": "MIT",
   "description": "Turn Talkback's spoken replies on and off from the bar. Click to switch, middle-click to stop speaking, right-click to open Talkback.",
