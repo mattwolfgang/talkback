@@ -6,7 +6,7 @@
 #include <QTemporaryDir>
 #include <QtTest>
 
-#include "dictation.h"
+#include "barplugin.h"
 #include "hooks.h"
 #include "keybindings.h"
 #include "kokoro.h"
@@ -37,7 +37,7 @@ private slots:
         settings.setEnabled(false);
         settings.setVoice("en_GB-alba-medium");
         settings.setSpeed(1.234);
-        QCOMPARE(read(path), QByteArray("enabled=false\nengine=piper\nvoice=en_GB-alba-medium\nkokoroVoice=af_heart\n"
+        QCOMPARE(read(path), QByteArray("enabled=false\nengine=kokoro\nvoice=en_GB-alba-medium\nkokoroVoice=af_heart\n"
                                         "speed=1.23\nexpression=0.67\nrhythm=0.80\npause=0.30\n"));
 
         Settings again(path);
@@ -94,7 +94,9 @@ private slots:
         const QString path = dir.filePath("settings.conf");
         {
             Settings settings(path);
+            QCOMPARE(settings.engine(), QString("kokoro"));
             settings.setVoice("en_GB-alba-medium");
+            settings.setEngine("piper");
             settings.setEngine("kokoro");
             settings.setKokoroVoice("bm_george");
             settings.setEngine("espeak");
@@ -187,13 +189,6 @@ private slots:
         write(dir.filePath("a.onnx.json"), "{}");
         write(dir.filePath("b.onnx"), "x");
         QCOMPARE(Voices::scanInstalled(dir.path()), QSet<QString>{"a"});
-    }
-
-    void dictationReadsSystemctl()
-    {
-        QCOMPARE(Dictation::parseState("loaded\nactive\n"), std::make_pair(true, true));
-        QCOMPARE(Dictation::parseState("loaded\ninactive\n"), std::make_pair(true, false));
-        QCOMPARE(Dictation::parseState("not-found\ninactive\n"), std::make_pair(false, false));
     }
 
     void hookReplacesTheOldOneAndKeepsOthers()
@@ -397,11 +392,10 @@ private slots:
     {
         Settings settings(QDir::tempPath() + "/talkback-unused.conf");
         Voices voices(QDir::tempPath() + "/talkback-no-voices", QDir::tempPath() + "/talkback-no-cache.json");
-        Dictation dictation("true");
         Speaker speaker(QDir::tempPath() + "/talkback-no-home");
         Kokoro kokoro;
         Keybindings keybindings(QDir::tempPath() + "/talkback-no-bindings.lua", "false");
-        for (const QObject *object : std::initializer_list<const QObject *>{&settings, &voices, &dictation, &speaker, &kokoro, &keybindings}) {
+        for (const QObject *object : std::initializer_list<const QObject *>{&settings, &voices, &speaker, &kokoro, &keybindings}) {
             const QMetaObject *meta = object->metaObject();
             for (int i = meta->methodOffset(); i < meta->methodCount(); ++i) {
                 const QMetaMethod method = meta->method(i);
@@ -418,8 +412,12 @@ private slots:
     {
         QTemporaryDir dir;
         Theme theme(dir.path());
-        QCOMPARE(theme.accent(), QString("#FFD60A"));
-        QCOMPARE(theme.accentForeground(), QString("black"));
+        QCOMPARE(theme.accent(), QColor("#FFD60A"));
+        QCOMPARE(theme.accentForeground(), QColor(Qt::black));
+        QCOMPARE(theme.fontSize(), 12);
+        QCOMPARE(theme.normalFill(), 0.04);
+        QCOMPARE(theme.popupBorder(), QColor("#FFD60A"));
+        QVERIFY(!theme.light());
     }
 
     void themeReadsAccent()
@@ -428,8 +426,148 @@ private slots:
         QDir(dir.path()).mkpath("theme");
         write(dir.path() + "/theme/colors.toml", "accent = \"#112233\"\n");
         Theme theme(dir.path());
-        QCOMPARE(theme.accent(), QString("#112233"));
-        QCOMPARE(theme.accentForeground(), QString("white"));
+        QCOMPARE(theme.accent(), QColor("#112233"));
+        QCOMPARE(theme.accentForeground(), QColor(Qt::white));
+    }
+
+    void themeReadsPaletteAndShellTokens()
+    {
+        QTemporaryDir dir;
+        QDir(dir.path()).mkpath("theme");
+        write(dir.path() + "/theme/colors.toml",
+              "mode = \"light\"\naccent = \"#112233\"\nforeground = \"#010203\"\n"
+              "background = '#fafafa'\ncolor1 = \"#aa0000\"\n");
+        write(dir.path() + "/theme/shell.toml",
+              "[hyprland]\nactive-border = \"rgba(8a8588ee) rgba(e2dddcee)\"\n"
+              "[controls]\nnormal-fill-alpha   = 0.1  # a comment\nhover-cursor-border-alpha = 7\n"
+              "[font]\nbase-size = 14\n"
+              "[popups]\nborder = \"hyprland.active-border\"\n"
+              "[menu]\nselected-text = \"foreground\"\n");
+        Theme theme(dir.path());
+        QVERIFY(theme.light());
+        QCOMPARE(theme.foreground(), QColor("#010203"));
+        QCOMPARE(theme.background(), QColor("#fafafa"));
+        QCOMPARE(theme.urgent(), QColor("#aa0000"));
+        QCOMPARE(theme.normalFill(), 0.1);
+        QCOMPARE(theme.hoverBorder(), 1.0);
+        QCOMPARE(theme.selectedFill(), 0.18);
+        QCOMPARE(theme.fontSize(), 14);
+        QCOMPARE(theme.popupBorder(), QColor("#ee8a8588"));
+        QCOMPARE(theme.rowSelectedText(), QColor("#010203"));
+    }
+
+    void settingsMuteAgentsOneByOne()
+    {
+        QTemporaryDir dir;
+        const QString path = dir.path() + "/settings.conf";
+        {
+            Settings settings(path);
+            QVERIFY(settings.agentEnabled("claude"));
+            settings.setAgentEnabled("claude", false);
+            settings.setAgentEnabled("codex", false);
+            settings.setAgentEnabled("codex", true);
+            // Only plain names, since they become keys in the file.
+            settings.setAgentEnabled("bad=name\nenabled", false);
+            QCOMPARE(settings.mutedAgents(), QStringList{"claude"});
+        }
+        QVERIFY(read(path).contains("agent.claude=false\n"));
+        QVERIFY(!read(path).contains("codex"));
+        QVERIFY(!read(path).contains("bad"));
+        Settings again(path);
+        QVERIFY(!again.agentEnabled("claude"));
+        QVERIFY(again.agentEnabled("codex"));
+        QVERIFY(again.enabled());
+    }
+
+    // Stand-ins for omarchy and omarchy-shell that log what they're asked.
+    static QString fakeOmarchy(const QTemporaryDir &dir, const QString &name, int exitCode = 0)
+    {
+        QDir(dir.path()).mkpath("bin");
+        const QString path = dir.path() + "/bin/" + name;
+        write(path, QString("#!/bin/sh\necho \"%1 $*\" >> \"%2/calls\"\nexit %3\n")
+                        .arg(name, dir.path()).arg(exitCode).toUtf8());
+        QFile::setPermissions(path, QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner);
+        return path;
+    }
+
+    void barPluginInstallsOnceAndRemoves()
+    {
+        QTemporaryDir dir;
+        QDir(dir.path()).mkpath("omarchy/plugins");
+        BarPlugin bar(dir.path() + "/omarchy/plugins", fakeOmarchy(dir, "omarchy"), fakeOmarchy(dir, "omarchy-shell"));
+        QVERIFY(bar.available());
+        QVERIFY(!bar.installed());
+
+        QVERIFY2(bar.install(), qPrintable(bar.error()));
+        QVERIFY(bar.installed());
+        QVERIFY(read(bar.directory() + "/manifest.json").contains("\"io.github.mattwolfgang.talkback\""));
+        QVERIFY(read(bar.directory() + "/BarWidget.qml").contains("io.github.mattwolfgang.talkback"));
+        QCOMPARE(read(dir.path() + "/calls"),
+                 QString("omarchy-shell shell rescanPlugins\nomarchy plugin enable io.github.mattwolfgang.talkback\n"));
+
+        // Installing again refreshes the files but leaves its place in the bar
+        // alone, so an icon someone turned off stays off.
+        write(bar.directory() + "/BarWidget.qml", "old");
+        QVERIFY(bar.install());
+        QVERIFY(read(bar.directory() + "/BarWidget.qml").contains("io.github.mattwolfgang.talkback"));
+        QCOMPARE(read(dir.path() + "/calls").count('\n'), 2);
+
+        QVERIFY(bar.remove());
+        QVERIFY(!bar.installed());
+        QVERIFY(!QFileInfo::exists(bar.directory()));
+        QVERIFY(read(dir.path() + "/calls").endsWith(
+            "omarchy plugin disable io.github.mattwolfgang.talkback\nomarchy-shell shell rescanPlugins\n"));
+    }
+
+    void barPluginRefreshesAfterAnUpdate()
+    {
+        QTemporaryDir dir;
+        QDir(dir.path()).mkpath("omarchy/plugins");
+        BarPlugin bar(dir.path() + "/omarchy/plugins", fakeOmarchy(dir, "omarchy"), fakeOmarchy(dir, "omarchy-shell"));
+
+        // Nothing to refresh until it's installed, so a removed icon stays gone.
+        bool updated = true;
+        QVERIFY(bar.refresh(&updated));
+        QVERIFY(!updated);
+        QVERIFY(!QFileInfo::exists(bar.directory()));
+
+        QVERIFY(bar.install());
+        const QString calls = read(dir.path() + "/calls");
+        QVERIFY(bar.refresh(&updated));
+        QVERIFY(!updated);
+
+        // An older version: a changed widget, a file this one no longer ships,
+        // and a translation it didn't have yet.
+        write(bar.directory() + "/BarWidget.qml", "old");
+        write(bar.directory() + "/Old.qml", "stale");
+        QFile::remove(bar.directory() + "/i18n/de.json");
+        QVERIFY(bar.refresh(&updated));
+        QVERIFY(updated);
+        QVERIFY(read(bar.directory() + "/BarWidget.qml").contains("io.github.mattwolfgang.talkback"));
+        QVERIFY(!QFileInfo::exists(bar.directory() + "/Old.qml"));
+        QVERIFY(QFileInfo::exists(bar.directory() + "/i18n/de.json"));
+        // Its place in the bar is left alone, and so is the record of it.
+        QVERIFY(QFileInfo::exists(bar.directory() + "/.talkback-enabled"));
+        QCOMPARE(read(dir.path() + "/calls"), calls);
+    }
+
+    void barPluginNeedsOmarchy()
+    {
+        QTemporaryDir dir;
+        BarPlugin bar(dir.path() + "/omarchy/plugins", fakeOmarchy(dir, "omarchy"), fakeOmarchy(dir, "omarchy-shell"));
+        QVERIFY(!bar.available());
+        QVERIFY(!bar.install());
+        QVERIFY(!bar.installed());
+    }
+
+    void barPluginSaysWhenTheShellMissesIt()
+    {
+        QTemporaryDir dir;
+        QDir(dir.path()).mkpath("omarchy/plugins");
+        BarPlugin bar(dir.path() + "/omarchy/plugins", fakeOmarchy(dir, "omarchy"), fakeOmarchy(dir, "omarchy-shell", 1));
+        QVERIFY(!bar.install());
+        QVERIFY(bar.installed());
+        QVERIFY(bar.error().contains("rescanPlugins"));
     }
 
     void translatorFallsBackToEnglish()

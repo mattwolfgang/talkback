@@ -1,5 +1,5 @@
 // talkback — pick the Piper or Kokoro voice that reads coding agents' replies
-// aloud, and turn spoken replies and Voxtype dictation on and off.
+// aloud, and turn spoken replies on and off for each agent.
 
 #include <QGuiApplication>
 #include <QIcon>
@@ -9,11 +9,11 @@
 #include <QUrl>
 
 #include "cli.h"
-#include "dictation.h"
 #include "keybindings.h"
 #include "kokoro.h"
 #include "settings.h"
 #include "speaker.h"
+#include "barplugin.h"
 #include "theme.h"
 #include "translator.h"
 #include "voices.h"
@@ -38,19 +38,26 @@ int main(int argc, char *argv[]) {
     Translator translator;
     app.installTranslator(&translator);
 
+    // A package update brings a new bar icon inside the binary. Whatever runs
+    // Talkback first (the window, a key, or the icon itself) brings the copy
+    // the Omarchy shell loads up to date; a removed icon stays removed.
+    BarPlugin().refresh();
+
     const int code = runCli(app.arguments());
     if (code >= 0)
         return code;
 
-    QQuickStyle::setStyle("Material");
+    // The plain style, so every control can be drawn the way the Omarchy shell
+    // draws its own instead of looking like a stock Qt app.
+    QQuickStyle::setStyle("Basic");
 
     Theme theme;
     Settings settings;
     Voices voices;
-    Dictation dictation;
     Speaker speaker;
     Kokoro kokoro;
     Keybindings keybindings;
+    BarPlugin barPlugin;
 
     QQmlApplicationEngine engine;
     QObject::connect(&translator, &Translator::changed, &engine, &QQmlEngine::retranslate);
@@ -58,10 +65,10 @@ int main(int argc, char *argv[]) {
     engine.rootContext()->setContextProperty("theme", &theme);
     engine.rootContext()->setContextProperty("settings", &settings);
     engine.rootContext()->setContextProperty("voices", &voices);
-    engine.rootContext()->setContextProperty("dictation", &dictation);
     engine.rootContext()->setContextProperty("speaker", &speaker);
     engine.rootContext()->setContextProperty("kokoro", &kokoro);
     engine.rootContext()->setContextProperty("keybindings", &keybindings);
+    engine.rootContext()->setContextProperty("barPlugin", &barPlugin);
     engine.load(QUrl("qrc:/Main.qml"));
     if (engine.rootObjects().isEmpty())
         return 1;

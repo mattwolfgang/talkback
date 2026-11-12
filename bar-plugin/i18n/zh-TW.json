@@ -1,0 +1,9 @@
+{
+  "tooltip.on": "朗讀回覆已開啟。按一下關閉，按中鍵停止朗讀，按右鍵選擇代理。",
+  "tooltip.off": "朗讀回覆已關閉。按一下開啟，按右鍵選擇代理。",
+  "speech.label": "朗讀回覆",
+  "speech.description": "朗讀程式設計代理的回覆",
+  "agents.heading": "代理",
+  "agents.none": "還沒有設定任何程式設計代理。請執行：%1",
+  "action.open": "開啟 Talkback"
+}

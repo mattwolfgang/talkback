@@ -1,0 +1,9 @@
+{
+  "tooltip.on": "As respostas faladas estão ativadas. Clique para desativá-las, clique do meio para parar de falar, clique direito para escolher agentes.",
+  "tooltip.off": "As respostas faladas estão desativadas. Clique para ativá-las, clique direito para escolher agentes.",
+  "speech.label": "Respostas faladas",
+  "speech.description": "Ler em voz alta as respostas dos agentes de programação",
+  "agents.heading": "Agentes",
+  "agents.none": "Nenhum agente de programação está configurado ainda. Execute: %1",
+  "action.open": "Abrir o Talkback"
+}

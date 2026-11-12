@@ -1,0 +1,9 @@
+{
+  "tooltip.on": "Opplest svar er på. Klikk for å slå av, midtklikk for å stoppe opplesingen, høyreklikk for å velge agenter.",
+  "tooltip.off": "Opplest svar er av. Klikk for å slå på, høyreklikk for å velge agenter.",
+  "speech.label": "Opplest svar",
+  "speech.description": "Les opp kodeagentenes svar",
+  "agents.heading": "Agenter",
+  "agents.none": "Ingen kodeagent er satt opp ennå. Kjør: %1",
+  "action.open": "Åpne Talkback"
+}

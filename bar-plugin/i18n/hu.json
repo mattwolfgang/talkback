@@ -1,0 +1,9 @@
+{
+  "tooltip.on": "A felolvasott válaszok be vannak kapcsolva. Kattints a kikapcsoláshoz, középső kattintással leállíthatod a felolvasást, jobb kattintással ügynököket választhatsz.",
+  "tooltip.off": "A felolvasott válaszok ki vannak kapcsolva. Kattints a bekapcsoláshoz, jobb kattintással ügynököket választhatsz.",
+  "speech.label": "Felolvasott válaszok",
+  "speech.description": "A programozó ügynökök válaszainak felolvasása",
+  "agents.heading": "Ügynökök",
+  "agents.none": "Még egyetlen programozó ügynök sincs beállítva. Futtasd: %1",
+  "action.open": "Talkback megnyitása"
+}

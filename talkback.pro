@@ -5,8 +5,8 @@ TARGET = talkback
 TEMPLATE = app
 
 HEADERS += \
+    src/barplugin.h \
     src/cli.h \
-    src/dictation.h \
     src/hooks.h \
     src/keybindings.h \
     src/kokoro.h \
@@ -18,8 +18,8 @@ HEADERS += \
 
 SOURCES += \
     src/main.cpp \
+    src/barplugin.cpp \
     src/cli.cpp \
-    src/dictation.cpp \
     src/hooks.cpp \
     src/keybindings.cpp \
     src/kokoro.cpp \

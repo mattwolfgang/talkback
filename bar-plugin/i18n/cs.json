@@ -1,0 +1,9 @@
+{
+  "tooltip.on": "Čtené odpovědi jsou zapnuté. Kliknutím je vypnete, prostředním tlačítkem zastavíte čtení, pravým vyberete agenty.",
+  "tooltip.off": "Čtené odpovědi jsou vypnuté. Kliknutím je zapnete, pravým tlačítkem vyberete agenty.",
+  "speech.label": "Čtené odpovědi",
+  "speech.description": "Číst nahlas odpovědi programovacích agentů",
+  "agents.heading": "Agenti",
+  "agents.none": "Zatím není nastavený žádný programovací agent. Spusťte: %1",
+  "action.open": "Otevřít Talkback"
+}

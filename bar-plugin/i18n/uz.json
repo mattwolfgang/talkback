@@ -1,0 +1,9 @@
+{
+  "tooltip.on": "O‘qiladigan javoblar yoniq. O‘chirish uchun bosing, o‘qishni to‘xtatish uchun o‘rta tugma, agentlarni tanlash uchun o‘ng tugma.",
+  "tooltip.off": "O‘qiladigan javoblar o‘chiq. Yoqish uchun bosing, agentlarni tanlash uchun o‘ng tugma.",
+  "speech.label": "O‘qiladigan javoblar",
+  "speech.description": "Dasturlash agentlari javoblarini ovoz chiqarib o‘qish",
+  "agents.heading": "Agentlar",
+  "agents.none": "Hali hech bir dasturlash agenti sozlanmagan. Ishga tushiring: %1",
+  "action.open": "Talkback’ni ochish"
+}

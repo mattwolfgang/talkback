@@ -2,8 +2,9 @@
 # Speaks text with Piper or Kokoro. Coding agents run it as a hook when a reply
 # finishes (the hook's JSON arrives on stdin); Talkback runs it to preview voices.
 #
-#   talkback-speak [--agent NAME]          read the agent's last reply, if turned on
-#                                          (claude, codex, grok, cursor, antigravity, omp)
+#   talkback-speak [--agent NAME]          read the agent's last reply, if turned on for
+#                                          all agents and this one (claude, codex, grok,
+#                                          cursor, antigravity, omp)
 #   talkback-speak --say TEXT [--engine piper|kokoro] [--voice NAME] [--speed N]
 #                  [--expression N] [--rhythm N] [--pause SECONDS] [--speaker N]
 #   talkback-speak --stop                  stop whatever is playing
@@ -24,7 +25,9 @@ stop_speaking() {
   fi
 }
 
+# Kokoro unless Piper was picked: it sounds more natural.
 engine=$(setting engine)
+engine=${engine:-kokoro}
 voice=
 speed=$(setting speed)
 expression=$(setting expression)
@@ -54,6 +57,9 @@ done
 if [[ -z $text ]]; then
   # Called as the hook: stay quiet unless spoken replies are on.
   [[ $(setting enabled) == false ]] && exit 0
+  # Each agent can be silenced on its own (agent.codex=false), say from the
+  # bar icon's menu. Only plain names reach the sed pattern.
+  [[ $agent =~ ^[a-z0-9-]+$ && $(setting "agent.$agent") == false ]] && exit 0
 
   input=$(cat)
   case $agent in

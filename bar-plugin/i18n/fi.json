@@ -1,0 +1,9 @@
+{
+  "tooltip.on": "Luetut vastaukset ovat päällä. Napsauta kytkeäksesi ne pois, keskinapsauta lopettaaksesi lukemisen, napsauta hiiren oikealla valitaksesi agentit.",
+  "tooltip.off": "Luetut vastaukset ovat pois päältä. Napsauta kytkeäksesi ne päälle, napsauta hiiren oikealla valitaksesi agentit.",
+  "speech.label": "Luetut vastaukset",
+  "speech.description": "Lue koodausagenttien vastaukset ääneen",
+  "agents.heading": "Agentit",
+  "agents.none": "Yhtään koodausagenttia ei ole vielä määritetty. Suorita: %1",
+  "action.open": "Avaa Talkback"
+}

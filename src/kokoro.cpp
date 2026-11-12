@@ -6,12 +6,24 @@
 #include "speaker.h"
 #include "voices.h"
 
+// talkback-kokoro-setup reports its steps in English; these are shown in the
+// window's language, and anything else (pip's errors) as it came.
+QString Kokoro::progressText(const QString &line) {
+    if (line == "Installing kokoro-onnx…")
+        return tr("Installing kokoro-onnx…");
+    if (line == "Kokoro is ready.")
+        return tr("Kokoro is ready.");
+    if (line.startsWith("Downloading ") && line.endsWith("…"))
+        return tr("Downloading %1…").arg(line.mid(12).chopped(1));
+    return line;
+}
+
 Kokoro::Kokoro(QObject *parent) : QObject(parent) {
     m_setup.setProcessChannelMode(QProcess::MergedChannels);
     connect(&m_setup, &QProcess::readyRead, this, [this] {
         const QStringList lines = QString::fromUtf8(m_setup.readAll()).split('\n', Qt::SkipEmptyParts);
         if (!lines.isEmpty()) {
-            m_progress = lines.last().trimmed();
+            m_progress = progressText(lines.last().trimmed());
             emit changed();
         }
     });

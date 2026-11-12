@@ -1,0 +1,9 @@
+{
+  "tooltip.on": "Gesproken antwoorden staan aan. Klik om ze uit te zetten, middelklik om het voorlezen te stoppen, rechtsklik om agents te kiezen.",
+  "tooltip.off": "Gesproken antwoorden staan uit. Klik om ze aan te zetten, rechtsklik om agents te kiezen.",
+  "speech.label": "Gesproken antwoorden",
+  "speech.description": "De antwoorden van codeeragents voorlezen",
+  "agents.heading": "Agents",
+  "agents.none": "Er is nog geen codeeragent ingesteld. Voer uit: %1",
+  "action.open": "Talkback openen"
+}

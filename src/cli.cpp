@@ -2,12 +2,13 @@
 
 #include <QCoreApplication>
 #include <QDir>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QProcess>
 #include <QTextStream>
 
-#include "dictation.h"
+#include "barplugin.h"
 #include "hooks.h"
 #include "keybindings.h"
 #include "kokoro.h"
@@ -31,7 +32,8 @@ const char *usage =
     "\n"
     "  open                                  open the window (the default)\n"
     "  speech [on|off|toggle|status]         read the coding agents' replies aloud\n"
-    "  dictation [on|off|toggle|status]      let Voxtype listen for the dictation keys\n"
+    "  agent [AGENT [on|off|toggle]] [--json]  show which agents' replies are read, or switch one\n"
+    "                                        on its own, like: talkback agent claude off\n"
     "  engine [piper|kokoro]                 show or set the speech engine\n"
     "  voice [NAME]                          show or set the engine's voice\n"
     "  kokoro install                        install Kokoro (about 350 MB)\n"
@@ -40,22 +42,18 @@ const char *usage =
     "  stop                                  stop speaking\n"
     "  hook install [AGENT|all]              set up the hook that reads an agent's replies: claude,\n"
     "                                        codex, grok, cursor, antigravity, omp, or all found (default);\n"
-    "                                        also binds the keys below unless given --no-keys\n"
+    "                                        also binds the keys below unless given --no-keys, and adds\n"
+    "                                        the bar icon unless given --no-bar\n"
     "  keys [install|toggle KEY|stop KEY]    show, bind, or change the Hyprland keys that work from\n"
     "                                        anywhere, like: talkback keys stop \"SUPER + ALT + ESCAPE\"\n"
+    "  bar [install|remove]                  show, add, or take away the Omarchy bar icon that switches\n"
+    "                                        spoken replies\n"
     "  status [--json]                       show everything above\n"
     "\n"
-    "Add --notify to speech or dictation to show the result as a desktop notification.\n";
+    "Add --notify to speech to show the result as a desktop notification.\n";
 
 void notify(const QString &summary, const QString &icon) {
     QProcess::startDetached("notify-send", {"--app-name=Talkback", "--icon=" + icon, "--expire-time=2500", summary});
-}
-
-std::pair<bool, bool> dictationState() {
-    QProcess query;
-    query.start("systemctl", {"--user", "show", "voxtype.service", "-p", "LoadState,ActiveState", "--value"});
-    query.waitForFinished(5000);
-    return Dictation::parseState(query.readAllStandardOutput());
 }
 
 void printKeys(const Keybindings &keys) {
@@ -83,6 +81,7 @@ int runCli(const QStringList &all) {
     const bool json = arguments.removeAll("--json") > 0;
     const bool shouldNotify = arguments.removeAll("--notify") > 0;
     const bool noKeys = arguments.removeAll("--no-keys") > 0;
+    const bool noBar = arguments.removeAll("--no-bar") > 0;
     const QString command = arguments.value(0);
     const QString argument = arguments.value(1);
 
@@ -118,31 +117,39 @@ int runCli(const QStringList &all) {
         return 0;
     }
 
-    if (command == "dictation") {
-        const auto [available, active] = dictationState();
-        if (!available) {
-            err() << "Voxtype isn't installed as a user service (voxtype.service).\n";
-            return 1;
-        }
-        const int wanted = parseSwitch(argument, active);
-        if (wanted < 0) {
-            err() << usage;
-            return 1;
-        }
-        if (bool(wanted) != active) {
-            QProcess change;
-            change.start("systemctl", {"--user", wanted ? "start" : "stop", "voxtype.service"});
-            change.waitForFinished(15000);
-            if (change.exitCode() != 0) {
-                err() << change.readAllStandardError();
+    if (command == "agent") {
+        Settings settings;
+        if (!argument.isEmpty()) {
+            if (!Hooks::agents().contains(argument)) {
+                err() << "Not an agent Talkback knows: " << argument << ". Pick one of "
+                      << Hooks::agents().join(", ") << ".\n";
                 return 1;
             }
-            if (shouldNotify)
-                notify(wanted ? QCoreApplication::translate("Cli", "Dictation on")
-                              : QCoreApplication::translate("Cli", "Dictation off"),
-                       wanted ? "audio-input-microphone" : "microphone-sensitivity-muted");
+            const int wanted = parseSwitch(arguments.value(2), settings.agentEnabled(argument));
+            if (wanted < 0) {
+                err() << usage;
+                return 1;
+            }
+            settings.setAgentEnabled(argument, wanted);
+            if (!settings.error().isEmpty()) {
+                err() << "Couldn't save settings: " << settings.error() << "\n";
+                return 1;
+            }
         }
-        out() << (wanted ? "on" : "off") << "\n";
+        const QString home = QDir::homePath();
+        const QStringList shown = argument.isEmpty() ? Hooks::agents() : QStringList{argument};
+        QJsonArray list;
+        for (const QString &agent : shown) {
+            const bool hooked = Hooks::installed(agent, home);
+            list.append(QJsonObject{{"id", agent}, {"name", Hooks::displayName(agent)},
+                                    {"hooked", hooked}, {"on", settings.agentEnabled(agent)}});
+            if (!json)
+                out() << QString("%1 %2%3\n").arg(Hooks::displayName(agent).leftJustified(12),
+                                                  settings.agentEnabled(agent) ? "on " : "off",
+                                                  hooked ? "" : "  (no hook)");
+        }
+        if (json)
+            out() << QJsonDocument(list).toJson(QJsonDocument::Compact) << "\n";
         return 0;
     }
 
@@ -267,6 +274,35 @@ int runCli(const QStringList &all) {
                 err() << keys.error() << "\n";
             printKeys(keys);
         }
+        if (!noBar) {
+            // Only on Omarchy, and like the keys, a warning when it fails.
+            BarPlugin bar;
+            if (bar.available()) {
+                if (bar.install())
+                    out() << "Bar icon: in " << bar.directory() << "\n";
+                else
+                    err() << bar.error() << "\n";
+            }
+        }
+        return ok ? 0 : 1;
+    }
+
+    if (command == "bar") {
+        BarPlugin bar;
+        bool ok = true;
+        if (argument == "install")
+            ok = bar.install();
+        else if (argument == "remove")
+            ok = bar.remove();
+        else if (!argument.isEmpty()) {
+            err() << usage;
+            return 1;
+        }
+        if (!ok)
+            err() << bar.error() << "\n";
+        out() << "Bar icon: " << (bar.installed() ? "in " + bar.directory()
+                                  : bar.available() ? QString("not installed")
+                                  : QString("no Omarchy shell")) << "\n";
         return ok ? 0 : 1;
     }
 
@@ -289,7 +325,6 @@ int runCli(const QStringList &all) {
 
     if (command == "status") {
         Settings settings;
-        const auto [available, active] = dictationState();
         QJsonObject hooks;
         QStringList hooked;
         for (const QString &agent : Hooks::agents()) {
@@ -298,6 +333,7 @@ int runCli(const QStringList &all) {
                 hooked.append(agent);
         }
         Keybindings keys;
+        const BarPlugin bar;
         const QJsonObject status{
             {"speech", settings.enabled()},
             {"engine", settings.engine()},
@@ -314,8 +350,8 @@ int runCli(const QStringList &all) {
             {"hooks", hooks},
             {"toggleKey", keys.toggleKey()},
             {"stopKey", keys.stopKey()},
-            {"dictationAvailable", available},
-            {"dictation", active},
+            {"barIcon", bar.installed()},
+            {"mutedAgents", QJsonArray::fromStringList(settings.mutedAgents())},
         };
         if (json) {
             out() << QJsonDocument(status).toJson(QJsonDocument::Compact) << "\n";
@@ -330,9 +366,10 @@ int runCli(const QStringList &all) {
                   << "Pause:          " << QString::number(settings.pause(), 'f', 2) << " s\n"
                   << "Speaker:        " << settings.speaker() << "\n"
                   << "Hooks:          " << (hooked.isEmpty() ? "none" : hooked.join(", ")) << "\n"
+                  << "Silent agents:  " << (settings.mutedAgents().isEmpty() ? "none" : settings.mutedAgents().join(", ")) << "\n"
                   << "Toggle key:     " << (keys.toggleKey().isEmpty() ? "not bound" : keys.label(keys.toggleKey())) << "\n"
                   << "Stop key:       " << (keys.stopKey().isEmpty() ? "not bound" : keys.label(keys.stopKey())) << "\n"
-                  << "Dictation:      " << (!available ? "Voxtype not installed" : active ? "on" : "off") << "\n";
+                  << "Bar icon:       " << (bar.installed() ? "installed" : bar.available() ? "not installed" : "no Omarchy shell") << "\n";
         }
         return 0;
     }

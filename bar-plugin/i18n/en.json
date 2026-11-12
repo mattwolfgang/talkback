@@ -1,0 +1,9 @@
+{
+  "tooltip.on": "Spoken replies are on. Click to turn them off, middle-click to stop speaking, right-click to pick agents.",
+  "tooltip.off": "Spoken replies are off. Click to turn them on, right-click to pick agents.",
+  "speech.label": "Spoken replies",
+  "speech.description": "Read coding agents' replies aloud",
+  "agents.heading": "Agents",
+  "agents.none": "No coding agent is set up yet. Run: %1",
+  "action.open": "Open Talkback"
+}

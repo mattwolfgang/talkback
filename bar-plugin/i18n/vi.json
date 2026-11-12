@@ -1,0 +1,9 @@
+{
+  "tooltip.on": "Đọc câu trả lời đang bật. Nhấp để tắt, nhấp chuột giữa để dừng đọc, nhấp chuột phải để chọn tác tử.",
+  "tooltip.off": "Đọc câu trả lời đang tắt. Nhấp để bật, nhấp chuột phải để chọn tác tử.",
+  "speech.label": "Đọc câu trả lời",
+  "speech.description": "Đọc to câu trả lời của tác tử lập trình",
+  "agents.heading": "Tác tử",
+  "agents.none": "Chưa có tác tử lập trình nào được thiết lập. Hãy chạy: %1",
+  "action.open": "Mở Talkback"
+}

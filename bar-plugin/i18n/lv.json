@@ -1,0 +1,9 @@
+{
+  "tooltip.on": "Nolasītās atbildes ir ieslēgtas. Noklikšķini, lai izslēgtu, vidējais klikšķis aptur nolasīšanu, labais klikšķis ļauj izvēlēties aģentus.",
+  "tooltip.off": "Nolasītās atbildes ir izslēgtas. Noklikšķini, lai ieslēgtu, labais klikšķis ļauj izvēlēties aģentus.",
+  "speech.label": "Nolasītās atbildes",
+  "speech.description": "Nolasīt programmēšanas aģentu atbildes",
+  "agents.heading": "Aģenti",
+  "agents.none": "Neviens programmēšanas aģents vēl nav iestatīts. Palaid: %1",
+  "action.open": "Atvērt Talkback"
+}

@@ -1,0 +1,9 @@
+{
+  "tooltip.on": "Czytane odpowiedzi są włączone. Kliknij, aby je wyłączyć, środkowy przycisk zatrzymuje czytanie, prawy pozwala wybrać agentów.",
+  "tooltip.off": "Czytane odpowiedzi są wyłączone. Kliknij, aby je włączyć, prawy przycisk pozwala wybrać agentów.",
+  "speech.label": "Czytane odpowiedzi",
+  "speech.description": "Czytaj na głos odpowiedzi agentów programistycznych",
+  "agents.heading": "Agenci",
+  "agents.none": "Żaden agent programistyczny nie jest jeszcze skonfigurowany. Uruchom: %1",
+  "action.open": "Otwórz Talkback"
+}

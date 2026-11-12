@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Controls
-import QtQuick.Controls.Material
 import QtQuick.Layouts
 
 ApplicationWindow {
@@ -11,16 +10,43 @@ ApplicationWindow {
     minimumHeight: 580
     visible: true
     title: "Talkback"
-    color: "#0e0e10"
+    color: theme.background
 
-    Material.theme: Material.Dark
-    Material.accent: theme.accent
-    Material.roundedScale: theme.radius
+    // The shell draws everything in the fontconfig "monospace" family, which
+    // omarchy-font-set points at the chosen font, on a 12 px base.
+    font.family: "monospace"
+    font.pixelSize: theme.fontSize
 
-    readonly property color panelColor: "#17171a"
-    readonly property color borderColor: "#27272c"
-    readonly property color mutedColor: "#9b9ba3"
-    readonly property color warningColor: "#ff8a80"
+    // Colors for the stock controls that are left (labels, tooltips, scroll
+    // bars, busy indicators), so they follow the theme too.
+    palette.window: theme.background
+    palette.windowText: theme.foreground
+    palette.base: theme.background
+    palette.text: theme.foreground
+    palette.button: theme.background
+    palette.buttonText: theme.foreground
+    palette.highlight: theme.accent
+    palette.highlightedText: theme.accentForeground
+    palette.toolTipBase: theme.background
+    palette.toolTipText: theme.foreground
+    palette.mid: shade(0.3)
+    palette.dark: theme.foreground
+
+    // The shell's type scale, rooted at the theme's base size.
+    readonly property int bodySmall: Math.round(theme.fontSize * 0.917)
+    readonly property int heading: Math.round(theme.fontSize * 1.333)
+    readonly property int display: Math.round(theme.fontSize * 2)
+
+    // Panels are a faint wash of the foreground with a separator-strength
+    // edge, as in the shell; hints sit between the text and the background.
+    readonly property color panelColor: shade(theme.normalFill)
+    readonly property color borderColor: shade(0.12)
+    readonly property color mutedColor: Qt.tint(theme.foreground, Qt.rgba(theme.background.r, theme.background.g, theme.background.b, 0.4))
+    readonly property color warningColor: theme.urgent
+
+    function shade(alpha) {
+        return Qt.rgba(theme.foreground.r, theme.foreground.g, theme.foreground.b, alpha)
+    }
 
     property bool helpVisible: false
     // Recording a new key for the keys dialog; every shortcut stands aside.
@@ -121,7 +147,6 @@ ApplicationWindow {
     Shortcut { sequence: "D"; enabled: !win.typing; context: Qt.ApplicationShortcut; onActivated: if (win.selected && !win.selected.installed) voices.download(win.selected.key) }
     Shortcut { sequence: "Delete"; enabled: !win.typing; context: Qt.ApplicationShortcut; onActivated: win.askRemove(win.selected) }
     Shortcut { sequence: "S"; enabled: !win.typing; context: Qt.ApplicationShortcut; onActivated: settings.enabled = !settings.enabled }
-    Shortcut { sequence: "V"; enabled: !win.typing; context: Qt.ApplicationShortcut; onActivated: dictation.setActive(!dictation.active) }
     Shortcut { sequence: "E"; enabled: !win.typing; context: Qt.ApplicationShortcut; onActivated: win.switchEngine() }
     Shortcut { sequence: "I"; enabled: !win.typing; context: Qt.ApplicationShortcut; onActivated: voices.installedOnly = !voices.installedOnly }
     Shortcut { sequences: ["+", "="]; enabled: !win.typing; context: Qt.ApplicationShortcut; onActivated: win.nudgeSpeed(0.05) }
@@ -144,11 +169,6 @@ ApplicationWindow {
         }
     }
 
-    // Material buttons are pills by default; these follow the window corners.
-    component AppButton: Button {
-        Material.roundedScale: theme.radius
-    }
-
     component Panel: Rectangle {
         color: win.panelColor
         border.color: win.borderColor
@@ -157,7 +177,7 @@ ApplicationWindow {
 
     component Hint: Label {
         color: win.mutedColor
-        font.pixelSize: 12
+        font.pixelSize: win.bodySmall
         wrapMode: Text.WordWrap
         Layout.fillWidth: true
     }
@@ -184,7 +204,7 @@ ApplicationWindow {
             ToolTip.delay: 400
             HoverHandler { id: tipArea }
         }
-        Slider {
+        ThemeSlider {
             Layout.fillWidth: true
             from: setting.from
             to: setting.to
@@ -200,82 +220,69 @@ ApplicationWindow {
         }
     }
 
-    component ToggleCard: Panel {
-        id: card
-        property string heading
-        property string detail
+    // A switch on one line: the switch, its name, and the keys for it. What
+    // it does shows when the name is hovered, so many switches fit in little room.
+    component SwitchRow: RowLayout {
+        id: row
+        property string label
+        property string tip
         property string keys
         property bool on
         property bool canToggle: true
-        property string note
         signal toggled(bool on)
-        default property alias extra: extraColumn.data
 
         Layout.fillWidth: true
-        Layout.fillHeight: true
-        Layout.alignment: Qt.AlignTop
-        implicitHeight: cardLayout.implicitHeight + 32
-
-        ColumnLayout {
-            id: cardLayout
-            anchors.fill: parent
-            anchors.margins: 16
-            spacing: 6
-
-            RowLayout {
-                Layout.fillWidth: true
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 2
-                    Label { text: card.heading; font.pixelSize: 16; font.bold: true }
-                    Hint { text: card.detail }
-                }
-                Switch {
-                    id: toggle
-                    checked: card.on
-                    enabled: card.canToggle
-                    onToggled: {
-                        card.toggled(checked)
-                        // The real state decides, so a refused change flips back.
-                        checked = Qt.binding(() => card.on)
-                    }
-                }
-            }
-            Hint { text: card.keys; color: Qt.lighter(win.mutedColor, 1.15) }
-            Hint { visible: text.length > 0; text: card.note; color: win.warningColor }
-            ColumnLayout { id: extraColumn; Layout.fillWidth: true }
-            Item { Layout.fillHeight: true }
+        spacing: 6
+        ThemeSwitch {
+            checked: row.on
+            enabled: row.canToggle
+            onSwitched: on => row.toggled(on)
+        }
+        Label {
+            text: row.label
+            font.bold: true
+            ToolTip.visible: nameHover.hovered && row.tip.length > 0
+            ToolTip.text: row.tip
+            ToolTip.delay: 400
+            HoverHandler { id: nameHover }
+            // The name toggles too, as a label beside a switch does.
+            TapHandler { enabled: row.canToggle; onTapped: row.toggled(!row.on) }
+        }
+        Hint {
+            text: row.keys
+            wrapMode: Text.NoWrap
+            elide: Text.ElideRight
         }
     }
 
-    Dialog {
+    ThemeDialog {
         id: removeDialog
         property string key
         anchors.centerIn: parent
-        modal: true
+        width: Math.min(win.width - 40, 420)
         title: qsTr("Remove %1?").arg(key)
-        standardButtons: Dialog.Ok | Dialog.Cancel
-        Material.roundedScale: theme.radius
         Label { text: qsTr("You can download it again any time.") }
+        actions: [
+            ThemeButton { text: qsTr("Cancel"); onClicked: removeDialog.reject() },
+            ThemeButton { text: qsTr("Remove"); primary: true; onClicked: removeDialog.accept() }
+        ]
         onAccepted: voices.remove(key)
     }
 
-    Dialog {
+    ThemeDialog {
         id: keysDialog
         // "toggle" or "stop" while recording that action's new key.
         property string capturing: ""
         anchors.centerIn: parent
         width: Math.min(win.width - 40, 520)
-        modal: true
         title: qsTr("Keys that work from anywhere")
-        standardButtons: Dialog.Close
+        actions: ThemeButton { text: qsTr("Close"); enabled: !keysDialog.capturing; onClicked: keysDialog.close() }
         // Esc can be part of a key, so it only closes the dialog between recordings.
         closePolicy: capturing ? Popup.NoAutoClose : Popup.CloseOnEscape | Popup.CloseOnPressOutside
-        Material.roundedScale: theme.radius
         onClosed: capturing = ""
 
         ColumnLayout {
-            width: parent.width
+            Layout.fillWidth: true
             spacing: 10
 
             Repeater {
@@ -292,10 +299,10 @@ ApplicationWindow {
                     Label { text: parent.modelData.name; Layout.fillWidth: true; wrapMode: Text.WordWrap }
                     Label {
                         text: parent.recording ? qsTr("Press keys…") : parent.key ? keybindings.label(parent.key) : qsTr("Not bound")
-                        color: parent.key || parent.recording ? Material.accentColor : win.warningColor
-                        font.family: "monospace"
+                        color: parent.key || parent.recording ? theme.accent : win.warningColor
                     }
-                    AppButton {
+                    ThemeButton {
+                        bordered: true
                         text: parent.recording ? qsTr("Cancel") : qsTr("Change")
                         onClicked: {
                             keysDialog.capturing = parent.recording ? "" : parent.modelData.action
@@ -354,85 +361,110 @@ ApplicationWindow {
 
             RowLayout {
                 Layout.fillWidth: true
-                Label { text: "Talkback"; font.pixelSize: 24; font.bold: true }
+                Label { text: "Talkback"; font.pixelSize: win.display; font.bold: true }
                 Item { Layout.fillWidth: true }
                 Hint { Layout.fillWidth: false; text: qsTr("Press ? for shortcuts") }
             }
 
-            GridLayout {
+            Panel {
                 Layout.fillWidth: true
-                // The cards share a row height, but the voice list gets the rest.
-                Layout.fillHeight: false
-                columns: win.width >= 760 ? 2 : 1
-                columnSpacing: 14
-                rowSpacing: 14
+                implicitHeight: switchLayout.implicitHeight + 20
 
-                ToggleCard {
-                    heading: qsTr("Spoken replies")
-                    detail: qsTr("Read your coding agents' replies aloud when they finish.")
-                    keys: [qsTr("S here"),
-                           keybindings.toggleKey ? qsTr("%1 anywhere").arg(keybindings.label(keybindings.toggleKey)) : "",
-                           keybindings.stopKey ? qsTr("%1 stops a reply").arg(keybindings.label(keybindings.stopKey)) : ""]
-                          .filter(part => part.length > 0).join(" · ")
-                    on: settings.enabled
-                    note: speaker.error
-                    onToggled: on => settings.enabled = on
+                ColumnLayout {
+                    id: switchLayout
+                    anchors.fill: parent
+                    anchors.margins: 10
+                    spacing: 2
 
                     RowLayout {
-                        visible: !speaker.hookInstalled
                         Layout.fillWidth: true
-                        Hint { text: qsTr("No coding agent is set up to use Talkback yet."); color: win.warningColor }
-                        AppButton {
-                            text: qsTr("Set up")
-                            Material.background: Material.accentColor
-                            Material.foreground: theme.accentForeground
-                            Material.roundedScale: theme.radius
-                            onClicked: {
-                                speaker.installHook()
-                                if (keybindings.available)
-                                    keybindings.install()
+                        SwitchRow {
+                            label: qsTr("Spoken replies")
+                            tip: [qsTr("Read your coding agents' replies aloud when they finish."),
+                                  keybindings.stopKey ? qsTr("%1 stops a reply").arg(keybindings.label(keybindings.stopKey)) : ""]
+                                 .filter(part => part.length > 0).join("\n")
+                            keys: [qsTr("S here"),
+                                   keybindings.toggleKey ? qsTr("%1 anywhere").arg(keybindings.label(keybindings.toggleKey)) : ""]
+                                  .filter(part => part.length > 0).join(" · ")
+                            on: settings.enabled
+                            onToggled: on => settings.enabled = on
+                        }
+                        ThemeButton {
+                            visible: keybindings.available
+                            text: qsTr("Change keys")
+                            onClicked: keysDialog.open()
+                        }
+                    }
+
+                    // Each agent's own switch, as a chip that's filled while
+                    // its replies are read. They only matter while replies are on.
+                    RowLayout {
+                        Layout.fillWidth: true
+                        // Lines the chips up with the switch names above.
+                        Layout.leftMargin: 6
+                        spacing: 8
+                        visible: speaker.hookedAgents.length > 0
+                        Hint {
+                            Layout.fillWidth: false
+                            text: qsTr("Agents")
+                        }
+                        Flow {
+                            Layout.fillWidth: true
+                            spacing: 4
+                            opacity: settings.enabled ? 1 : 0.45
+                            Repeater {
+                                model: speaker.hookedAgents
+                                delegate: ThemeButton {
+                                    required property var modelData
+                                    readonly property bool on: settings.mutedAgents.indexOf(modelData.id) < 0
+                                    text: modelData.name
+                                    selected: on
+                                    bordered: !on
+                                    opacity: on ? 1 : 0.5
+                                    topPadding: 4
+                                    bottomPadding: 4
+                                    onClicked: settings.setAgentEnabled(modelData.id, !on)
+                                }
                             }
                         }
                     }
 
+                    // Only what needs fixing gets a line of its own.
+                    Hint { visible: text.length > 0; text: speaker.error; color: win.warningColor }
                     RowLayout {
-                        readonly property bool missing: !keybindings.toggleKey || !keybindings.stopKey
-                        visible: missing || keybindings.available
+                        visible: !speaker.hookInstalled
+                        Layout.fillWidth: true
+                        Hint { text: qsTr("No coding agent is set up to use Talkback yet."); color: win.warningColor }
+                        ThemeButton {
+                            text: qsTr("Set up")
+                            primary: true
+                            onClicked: {
+                                speaker.installHook()
+                                if (keybindings.available)
+                                    keybindings.install()
+                                if (barPlugin.available && !barPlugin.installed)
+                                    barPlugin.install()
+                            }
+                        }
+                    }
+                    RowLayout {
+                        visible: !keybindings.toggleKey || !keybindings.stopKey
                         Layout.fillWidth: true
                         Hint {
-                            text: !parent.missing ? ""
-                                : !keybindings.available ? qsTr("No keys work from anywhere yet. Add them to your Hyprland config; the README has the lines.")
+                            text: !keybindings.available ? qsTr("No keys work from anywhere yet. Add them to your Hyprland config; the README has the lines.")
                                 : !keybindings.toggleKey && !keybindings.stopKey ? qsTr("The keys that work from anywhere aren't bound yet.")
                                 : !keybindings.stopKey ? qsTr("No key stops a reply from anywhere yet.")
                                 : qsTr("No key turns spoken replies on and off from anywhere yet.")
                             color: win.warningColor
                         }
-                        AppButton {
-                            visible: parent.missing && keybindings.available
+                        ThemeButton {
+                            visible: keybindings.available
                             text: qsTr("Bind keys")
-                            Material.background: Material.accentColor
-                            Material.foreground: theme.accentForeground
+                            primary: true
                             // A default key that's taken needs picking by hand.
                             onClicked: if (!keybindings.install()) keysDialog.open()
                         }
-                        AppButton {
-                            visible: keybindings.available
-                            text: qsTr("Change keys")
-                            flat: true
-                            onClicked: keysDialog.open()
-                        }
                     }
-                }
-
-                ToggleCard {
-                    heading: qsTr("Dictation")
-                    detail: qsTr("Let Voxtype listen for the dictation keys (F9, Right Alt, Super + Ctrl + X).")
-                    keys: qsTr("V here")
-                    on: dictation.active
-                    canToggle: dictation.available && !dictation.busy
-                    note: !dictation.available ? qsTr("Voxtype isn't set up. Pick it under Setup > Defaults > Dictation.")
-                                               : dictation.error
-                    onToggled: on => dictation.setActive(on)
                 }
             }
 
@@ -448,24 +480,23 @@ ApplicationWindow {
 
                     RowLayout {
                         Layout.fillWidth: true
-                        Label { text: qsTr("Voice"); font.pixelSize: 16; font.bold: true }
+                        Label { text: qsTr("Voice"); font.pixelSize: win.heading; font.bold: true }
                         Label {
                             Layout.fillWidth: true
                             text: win.describe(win.current)
                             elide: Text.ElideRight
-                            color: Material.accentColor
+                            color: theme.accent
                         }
                     }
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: 10
                         Label { text: qsTr("Engine"); Layout.preferredWidth: 130 }
-                        TabBar {
-                            id: engineBar
-                            currentIndex: win.kokoroMode ? 1 : 0
-                            Material.roundedScale: theme.radius
-                            TabButton { text: "Piper"; width: implicitWidth + 24; onClicked: if (win.kokoroMode) win.switchEngine() }
-                            TabButton { text: "Kokoro"; width: implicitWidth + 24; onClicked: if (!win.kokoroMode) win.switchEngine() }
+                        // A button group, like the shell's: the chosen one is filled.
+                        Row {
+                            spacing: 4
+                            ThemeButton { text: "Piper"; selected: !win.kokoroMode; onClicked: if (win.kokoroMode) win.switchEngine() }
+                            ThemeButton { text: "Kokoro"; selected: win.kokoroMode; onClicked: if (!win.kokoroMode) win.switchEngine() }
                         }
                         Hint {
                             Layout.fillWidth: true
@@ -484,24 +515,27 @@ ApplicationWindow {
                         Layout.fillWidth: true
                         spacing: 10
                         Label { text: qsTr("Speaker"); Layout.preferredWidth: 130 }
-                        SpinBox {
-                            id: speakerBox
-                            from: 0
-                            to: Math.max(0, win.speakerCount - 1)
-                            value: settings.speaker
-                            editable: true
-                            Material.roundedScale: theme.radius
-                            onValueModified: {
-                                settings.setSpeaker(settings.voice, value)
-                                value = Qt.binding(() => settings.speaker)
-                                win.preview(settings.voice)
+                        ThemeButton { text: "−"; onClicked: win.stepSpeaker(-1) }
+                        ThemeField {
+                            id: speakerField
+                            Layout.preferredWidth: 64
+                            horizontalAlignment: Text.AlignHCenter
+                            text: settings.speaker
+                            validator: IntValidator { bottom: 0; top: Math.max(0, win.speakerCount - 1) }
+                            onEditingFinished: {
+                                if (acceptableInput && Number(text) !== settings.speaker) {
+                                    settings.setSpeaker(settings.voice, Number(text))
+                                    win.preview(settings.voice)
+                                }
+                                text = Qt.binding(() => settings.speaker)
                             }
                         }
+                        ThemeButton { text: "+"; onClicked: win.stepSpeaker(1) }
                         Hint {
                             Layout.fillWidth: true
                             text: qsTr("0 to %1 · [ and ] step and play").arg(win.speakerCount - 1)
                         }
-                        AppButton { text: qsTr("Random"); flat: true; onClicked: win.randomSpeaker() }
+                        ThemeButton { text: qsTr("Random"); onClicked: win.randomSpeaker() }
                     }
                     SettingSlider {
                         label: qsTr("Speed")
@@ -544,27 +578,23 @@ ApplicationWindow {
                     RowLayout {
                         Layout.fillWidth: true
                         spacing: 10
-                        TextField {
+                        ThemeField {
                             id: sampleField
                             Layout.fillWidth: true
                             placeholderText: qsTr("Hello! This is how replies will sound. Here is a second sentence.")
                             onAccepted: win.preview(settings.voice)
                         }
-                        AppButton {
+                        ThemeButton {
                             text: qsTr("Play")
-                            highlighted: true
-                            Material.background: Material.accentColor
-                            Material.foreground: theme.accentForeground
-                            Material.roundedScale: theme.radius
+                            primary: true
                             enabled: win.kokoroMode ? kokoro.installed
                                                     : voices.installedCount >= 0 && voices.isInstalled(settings.voice)
                             onClicked: win.preview(settings.voice)
                         }
-                        AppButton { text: qsTr("Stop"); flat: true; onClicked: speaker.stop() }
-                        AppButton {
+                        ThemeButton { text: qsTr("Stop"); onClicked: speaker.stop() }
+                        ThemeButton {
                             visible: !win.kokoroMode
                             text: qsTr("Reset")
-                            flat: true
                             onClicked: settings.resetNaturalness()
                             ToolTip.visible: hovered
                             ToolTip.text: qsTr("Put expression, rhythm and pause back to their defaults")
@@ -577,7 +607,7 @@ ApplicationWindow {
             RowLayout {
                 Layout.fillWidth: true
                 spacing: 12
-                TextField {
+                ThemeField {
                     id: searchField
                     Layout.fillWidth: true
                     placeholderText: qsTr("Search voices by language, name or quality")
@@ -588,11 +618,17 @@ ApplicationWindow {
                     Keys.onUpPressed: list.decrementCurrentIndex()
                     Keys.onDownPressed: list.incrementCurrentIndex()
                 }
-                CheckBox {
+                RowLayout {
                     visible: !win.kokoroMode
-                    text: qsTr("Downloaded only")
-                    checked: voices.installedOnly
-                    onToggled: voices.installedOnly = checked
+                    spacing: 2
+                    Label {
+                        text: qsTr("Downloaded only")
+                        TapHandler { onTapped: voices.installedOnly = !voices.installedOnly }
+                    }
+                    ThemeSwitch {
+                        checked: voices.installedOnly
+                        onSwitched: on => voices.installedOnly = on
+                    }
                 }
             }
 
@@ -622,15 +658,17 @@ ApplicationWindow {
                         width: ListView.view.width
                         height: 58
 
+                        // The shell's menus mark the row under the cursor with a
+                        // faint fill and its text in the accent.
                         Rectangle {
                             anchors.fill: parent
-                            color: row.ListView.isCurrentItem ? "#222228" : "transparent"
+                            color: row.ListView.isCurrentItem ? win.shade(theme.rowSelectedFill) : "transparent"
                         }
                         Rectangle {
                             visible: row.inUse
                             width: 3
                             height: parent.height
-                            color: Material.accentColor
+                            color: theme.accent
                         }
                         TapHandler {
                             onTapped: { list.currentIndex = row.index; list.forceActiveFocus() }
@@ -649,6 +687,7 @@ ApplicationWindow {
                                 Label {
                                     Layout.fillWidth: true
                                     elide: Text.ElideRight
+                                    color: row.ListView.isCurrentItem ? theme.rowSelectedText : theme.foreground
                                     text: row.modelData.country
                                           ? qsTr("%1 (%2)").arg(row.modelData.language).arg(row.modelData.country)
                                           : row.modelData.language
@@ -672,29 +711,28 @@ ApplicationWindow {
                                 }
                             }
 
-                            AppButton {
+                            ThemeButton {
                                 visible: row.modelData.installed
                                 text: qsTr("Play")
-                                flat: true
                                 onClicked: win.preview(row.modelData.key)
                             }
                             Label {
                                 visible: row.inUse
                                 text: qsTr("In use")
-                                color: Material.accentColor
-                                Layout.preferredWidth: useButton.implicitWidth
+                                color: theme.accent
+                                Layout.preferredWidth: Math.max(implicitWidth, useButton.implicitWidth)
                                 horizontalAlignment: Text.AlignHCenter
                             }
-                            AppButton {
+                            ThemeButton {
                                 id: useButton
                                 visible: row.modelData.installed && !row.inUse
+                                bordered: true
                                 text: qsTr("Use")
                                 onClicked: win.activate(row.modelData)
                             }
-                            AppButton {
+                            ThemeButton {
                                 visible: row.modelData.installed && !row.inUse && row.modelData.engine !== "kokoro"
                                 text: qsTr("Remove")
-                                flat: true
                                 onClicked: win.askRemove(row.modelData)
                             }
                             BusyIndicator {
@@ -703,8 +741,9 @@ ApplicationWindow {
                                 Layout.preferredWidth: 32
                                 Layout.preferredHeight: 32
                             }
-                            AppButton {
+                            ThemeButton {
                                 visible: !row.modelData.installed
+                                bordered: true
                                 text: row.downloadingThis ? qsTr("Downloading…") : qsTr("Download")
                                 enabled: voices.downloading === ""
                                 onClicked: voices.download(row.modelData.key)
@@ -730,12 +769,11 @@ ApplicationWindow {
                             horizontalAlignment: Text.AlignHCenter
                             text: qsTr("Kokoro isn't installed yet. It needs about 350 MB: the kokoro-onnx Python package and its model and voices.")
                         }
-                        AppButton {
+                        ThemeButton {
                             Layout.alignment: Qt.AlignHCenter
                             visible: !kokoro.installing
                             text: qsTr("Install Kokoro")
-                            Material.background: Material.accentColor
-                            Material.foreground: theme.accentForeground
+                            primary: true
                             onClicked: kokoro.install()
                         }
                         RowLayout {
@@ -776,14 +814,19 @@ ApplicationWindow {
         Rectangle {
             anchors.fill: parent
             visible: win.helpVisible
-            color: "#e60e0e10"
+            color: Qt.rgba(theme.background.r, theme.background.g, theme.background.b, 0.9)
 
             TapHandler { onTapped: win.helpVisible = false }
 
-            Panel {
+            // A card like the shell's popups.
+            Rectangle {
                 anchors.centerIn: parent
                 width: Math.min(parent.width - 40, 520)
                 height: helpColumn.implicitHeight + 40
+                color: theme.background
+                radius: theme.radius
+                border.width: 2
+                border.color: theme.popupBorder
 
                 ColumnLayout {
                     id: helpColumn
@@ -791,7 +834,7 @@ ApplicationWindow {
                     anchors.margins: 20
                     spacing: 8
 
-                    Label { text: qsTr("Shortcuts"); font.pixelSize: 18; font.bold: true }
+                    Label { text: qsTr("Shortcuts"); font.pixelSize: win.heading; font.bold: true }
 
                     GridLayout {
                         columns: 2
@@ -810,7 +853,6 @@ ApplicationWindow {
                                 ["+ −", qsTr("Speak faster or slower")],
                                 ["[ ]", qsTr("Previous or next speaker, and play it")],
                                 ["S", qsTr("Turn spoken replies on or off")],
-                                ["V", qsTr("Turn dictation on or off")],
                                 ["Esc", qsTr("Stop speaking")],
                                 ["?", qsTr("Show or hide this list")],
                                 ["Q", qsTr("Quit")]
@@ -822,8 +864,7 @@ ApplicationWindow {
                                 Label {
                                     text: parent.modelData[0]
                                     Layout.preferredWidth: 190
-                                    color: Material.accentColor
-                                    font.family: "monospace"
+                                    color: theme.accent
                                 }
                                 Label { text: parent.modelData[1]; Layout.fillWidth: true; wrapMode: Text.WordWrap }
                             }

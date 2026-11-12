@@ -1,0 +1,9 @@
+{
+  "tooltip.on": "Balasan lisan nyala. Klik untuk mematikan, klik tengah untuk berhenti membaca, klik kanan untuk memilih agen.",
+  "tooltip.off": "Balasan lisan mati. Klik untuk menyalakan, klik kanan untuk memilih agen.",
+  "speech.label": "Balasan lisan",
+  "speech.description": "Bacakan balasan agen pemrograman",
+  "agents.heading": "Agen",
+  "agents.none": "Belum ada agen pemrograman yang diatur. Jalankan: %1",
+  "action.open": "Buka Talkback"
+}

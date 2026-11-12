@@ -1,0 +1,9 @@
+{
+  "tooltip.on": "Sesli yanıtlar açık. Kapatmak için tıklayın, okumayı durdurmak için orta tıklayın, ajan seçmek için sağ tıklayın.",
+  "tooltip.off": "Sesli yanıtlar kapalı. Açmak için tıklayın, ajan seçmek için sağ tıklayın.",
+  "speech.label": "Sesli yanıtlar",
+  "speech.description": "Kodlama ajanlarının yanıtlarını sesli oku",
+  "agents.heading": "Ajanlar",
+  "agents.none": "Henüz hiçbir kodlama ajanı ayarlanmadı. Çalıştırın: %1",
+  "action.open": "Talkback'i aç"
+}

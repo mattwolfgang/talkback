@@ -1,0 +1,9 @@
+{
+  "tooltip.on": "Kveikt er á lesnum svörum. Smelltu til að slökkva, miðjusmelltu til að hætta að lesa, hægrismelltu til að velja fulltrúa.",
+  "tooltip.off": "Slökkt er á lesnum svörum. Smelltu til að kveikja, hægrismelltu til að velja fulltrúa.",
+  "speech.label": "Lesin svör",
+  "speech.description": "Lesa svör forritunarfulltrúa upphátt",
+  "agents.heading": "Fulltrúar",
+  "agents.none": "Enginn forritunarfulltrúi hefur enn verið stilltur. Keyrðu: %1",
+  "action.open": "Opna Talkback"
+}

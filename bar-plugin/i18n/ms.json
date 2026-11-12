@@ -1,0 +1,9 @@
+{
+  "tooltip.on": "Balasan lisan dihidupkan. Klik untuk mematikannya, klik tengah untuk berhenti membaca, klik kanan untuk memilih ejen.",
+  "tooltip.off": "Balasan lisan dimatikan. Klik untuk menghidupkannya, klik kanan untuk memilih ejen.",
+  "speech.label": "Balasan lisan",
+  "speech.description": "Bacakan balasan ejen pengekodan",
+  "agents.heading": "Ejen",
+  "agents.none": "Belum ada ejen pengekodan disediakan. Jalankan: %1",
+  "action.open": "Buka Talkback"
+}

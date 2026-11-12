@@ -1,0 +1,9 @@
+{
+  "tooltip.on": "Naka-on ang binibigkas na sagot. I-click para i-off, middle-click para ihinto ang pagbasa, right-click para pumili ng agent.",
+  "tooltip.off": "Naka-off ang binibigkas na sagot. I-click para i-on, right-click para pumili ng agent.",
+  "speech.label": "Binibigkas na sagot",
+  "speech.description": "Basahin nang malakas ang mga sagot ng coding agent",
+  "agents.heading": "Mga agent",
+  "agents.none": "Wala pang naka-set up na coding agent. Patakbuhin: %1",
+  "action.open": "Buksan ang Talkback"
+}

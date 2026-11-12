@@ -1,0 +1,9 @@
+{
+  "tooltip.on": "Upplästa svar är på. Klicka för att stänga av, mittenklicka för att sluta läsa upp, högerklicka för att välja agenter.",
+  "tooltip.off": "Upplästa svar är av. Klicka för att slå på, högerklicka för att välja agenter.",
+  "speech.label": "Upplästa svar",
+  "speech.description": "Läs upp kodagenters svar",
+  "agents.heading": "Agenter",
+  "agents.none": "Ingen kodagent är inställd än. Kör: %1",
+  "action.open": "Öppna Talkback"
+}

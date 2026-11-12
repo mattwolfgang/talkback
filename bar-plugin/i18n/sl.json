@@ -1,0 +1,9 @@
+{
+  "tooltip.on": "Prebrani odgovori so vklopljeni. Kliknite za izklop, srednji klik ustavi branje, desni klik izbere agente.",
+  "tooltip.off": "Prebrani odgovori so izklopljeni. Kliknite za vklop, desni klik izbere agente.",
+  "speech.label": "Prebrani odgovori",
+  "speech.description": "Na glas preberi odgovore programerskih agentov",
+  "agents.heading": "Agenti",
+  "agents.none": "Noben programerski agent še ni nastavljen. Zaženite: %1",
+  "action.open": "Odpri Talkback"
+}

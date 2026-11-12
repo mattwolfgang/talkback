@@ -1,0 +1,9 @@
+{
+  "tooltip.on": "Gesprochene Antworten sind an. Klicken zum Ausschalten, Mittelklick stoppt das Vorlesen, Rechtsklick wählt Agents.",
+  "tooltip.off": "Gesprochene Antworten sind aus. Klicken zum Einschalten, Rechtsklick wählt Agents.",
+  "speech.label": "Gesprochene Antworten",
+  "speech.description": "Antworten der Coding-Agents vorlesen",
+  "agents.heading": "Agents",
+  "agents.none": "Noch kein Coding-Agent ist eingerichtet. Führe aus: %1",
+  "action.open": "Talkback öffnen"
+}

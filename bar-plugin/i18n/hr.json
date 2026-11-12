@@ -1,0 +1,9 @@
+{
+  "tooltip.on": "Izgovoreni odgovori su uključeni. Kliknite za isključivanje, srednji klik zaustavlja čitanje, desni klik bira agente.",
+  "tooltip.off": "Izgovoreni odgovori su isključeni. Kliknite za uključivanje, desni klik bira agente.",
+  "speech.label": "Izgovoreni odgovori",
+  "speech.description": "Naglas čitaj odgovore programerskih agenata",
+  "agents.heading": "Agenti",
+  "agents.none": "Nijedan programerski agent još nije postavljen. Pokrenite: %1",
+  "action.open": "Otvori Talkback"
+}

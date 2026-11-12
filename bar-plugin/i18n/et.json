@@ -1,0 +1,9 @@
+{
+  "tooltip.on": "Ettelugemine on sees. Klõpsa väljalülitamiseks, keskklõpsa ettelugemise peatamiseks, paremklõpsa agentide valimiseks.",
+  "tooltip.off": "Ettelugemine on väljas. Klõpsa sisselülitamiseks, paremklõpsa agentide valimiseks.",
+  "speech.label": "Etteloetud vastused",
+  "speech.description": "Loe programmeerimisagentide vastused ette",
+  "agents.heading": "Agendid",
+  "agents.none": "Ühtegi programmeerimisagenti pole veel seadistatud. Käivita: %1",
+  "action.open": "Ava Talkback"
+}

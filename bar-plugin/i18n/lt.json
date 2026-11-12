@@ -1,0 +1,9 @@
+{
+  "tooltip.on": "Skaitomi atsakymai įjungti. Spustelėkite, kad išjungtumėte, vidurinis spustelėjimas nustoja skaityti, dešinysis leidžia pasirinkti agentus.",
+  "tooltip.off": "Skaitomi atsakymai išjungti. Spustelėkite, kad įjungtumėte, dešinysis spustelėjimas leidžia pasirinkti agentus.",
+  "speech.label": "Skaitomi atsakymai",
+  "speech.description": "Garsiai skaityti programavimo agentų atsakymus",
+  "agents.heading": "Agentai",
+  "agents.none": "Dar nė vienas programavimo agentas nenustatytas. Paleiskite: %1",
+  "action.open": "Atidaryti Talkback"
+}

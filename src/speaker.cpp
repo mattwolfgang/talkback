@@ -53,6 +53,14 @@ bool Speaker::hookInstalled() const {
     return false;
 }
 
+QVariantList Speaker::hookedAgents() const {
+    QVariantList agents;
+    for (const QString &agent : Hooks::agents())
+        if (Hooks::installed(agent, m_home))
+            agents.append(QVariantMap{{"id", agent}, {"name", Hooks::displayName(agent)}});
+    return agents;
+}
+
 bool Speaker::installHook() {
     QStringList agents;
     for (const QString &agent : Hooks::agents())

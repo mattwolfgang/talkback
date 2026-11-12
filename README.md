@@ -3,17 +3,16 @@
 ![Talkback](docs/screenshot.png)
 
 Talkback picks the voice that reads your coding agent's replies aloud (Claude
-Code, Codex, Grok, Cursor, Antigravity or OMP), and turns spoken replies and
-Voxtype dictation on and off. It speaks with either of two
+Code, Codex, Grok, Cursor, Antigravity or OMP), and turns spoken replies on and off, for every agent or one at a time. It speaks with either of two
 local engines:
 
-- [Piper](https://github.com/OHF-Voice/piper1-gpl): fast and light, with
-  hundreds of voices to browse, download and try.
 - [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M), through
-  [kokoro-onnx](https://github.com/thewh1teagle/kokoro-onnx): more natural
-  rhythm and intonation, 54 voices, about a second to start. The window
-  installs it (about 350 MB under `~/.local/share/talkback/kokoro`), or run
-  `talkback kokoro install`.
+  [kokoro-onnx](https://github.com/thewh1teagle/kokoro-onnx), the default:
+  natural rhythm and intonation, 54 voices, about a second to start. The
+  window installs it (about 350 MB under `~/.local/share/talkback/kokoro`), or
+  run `talkback kokoro install`.
+- [Piper](https://github.com/OHF-Voice/piper1-gpl): fast and light, with
+  hundreds of voices in dozens of languages to browse, download and try.
 
 It has three parts:
 
@@ -23,11 +22,19 @@ It has three parts:
   Markdown into plain sentences: code blocks and tables are skipped, list
   items and headings end like sentences, paths shrink to their file name, and
   symbols like `→` and `e.g.` read as words.
-- **`talkback`**, the window: the voice catalog, the two switches, and how the
+- **`talkback`**, the window: the voice catalog, the switches (spoken
+  replies, and one per agent, so only the agents you pick talk
+  back), and how the
   voice sounds: speed, expression (how much pitch varies), rhythm (how much
   sound lengths vary), and the pause after each sentence. Voices trained on
   many people (LibriTTS has 904) get a speaker picker, remembered per voice.
 - **`talkback <command>`**, the same controls with no window, for keybindings.
+
+The window, its notifications and the bar icon follow the language picked
+under Omarchy's Setup > Language, in all 50 of Omarchy's languages, and switch
+live when it changes. Terminal output stays in English, as Omarchy's own does.
+The translations live in `src/i18n/` and `bar-plugin/i18n/`, and
+`tests/i18n_test.py` checks every one against the English source.
 
 Settings live in `~/.config/talkback/settings.conf` and voices in
 `~/.local/share/piper-voices/`.
@@ -47,7 +54,6 @@ Settings live in `~/.config/talkback/settings.conf` and voices in
 | `+` `-` | Speak faster or slower |
 | `[` `]` | Previous or next speaker of a multi-speaker voice, and play it |
 | `S` | Turn spoken replies on or off |
-| `V` | Turn dictation on or off |
 | `Esc` | Stop speaking |
 | `?` | Show every shortcut |
 | `Q` | Quit |
@@ -68,15 +74,16 @@ o.bind("SUPER + ALT + ESCAPE", "Stop speaking", "talkback-speak --stop")
 
 ```text
 talkback speech [on|off|toggle|status] [--notify]
-talkback dictation [on|off|toggle|status] [--notify]
+talkback agent [AGENT [on|off|toggle]] [--json]
 talkback engine [piper|kokoro]
 talkback voice [NAME]
 talkback kokoro install
 talkback speaker [N]
 talkback say TEXT
 talkback stop
-talkback hook install [claude|codex|grok|cursor|antigravity|omp|all] [--no-keys]
+talkback hook install [claude|codex|grok|cursor|antigravity|omp|all] [--no-keys] [--no-bar]
 talkback keys [install|toggle KEY|stop KEY]
+talkback bar [install|remove]
 talkback status [--json]
 ```
 
@@ -95,8 +102,17 @@ in your home directory. Each hook lives where that agent looks for it:
 Grok and Cursor can also run Claude Code's hooks. `talkback-speak` ignores
 those runs and uses each agent's own hook, so a reply is read only once.
 
-Dictation off stops Voxtype's user service, so the dictation keys do nothing
-until it's turned back on or you log in again.
+On Omarchy, `talkback hook install` also puts a speaker icon in the bar
+(skip it with `--no-bar`). It's always there: click it to turn spoken replies
+on or off, and middle-click to stop speaking. It dims while replies are off.
+Right-click it for a popup with a switch for each agent that has a hook, so
+with Claude Code and Codex both running you can have only Codex talk back
+(`talkback agent claude off` does the same), and a button that opens
+Talkback. `talkback bar remove` takes it away, and
+`omarchy plugin disable io.github.mattwolfgang.talkback` hides it; installing
+again won't put it back. Its source is in `bar-plugin/`. After a package update,
+the first run of `talkback` (the window, a key, or a click on the icon) brings
+the installed copy up to date.
 
 ## Install
 
@@ -127,8 +143,7 @@ bin/install   # makepkg -fsi, so Talkback shows up in the app launcher
 talkback hook install
 ```
 
-Needs `piper-tts` (AUR) and, for dictation, Voxtype set up under Omarchy's
-Setup > Defaults > Dictation.
+Needs `piper-tts` (AUR).
 
 ## Credits
 
@@ -136,6 +151,10 @@ The theme and language handling (`src/theme.cpp`, `src/translator.cpp`)
 follow [Omacut](https://github.com/omacom-io/omacut) and
 [Monologue](https://github.com/omacom/monologue), MIT licensed,
 Copyright (c) David Heinemeier Hansson.
+The controls (`src/Theme*.qml`) follow the
+[Omarchy](https://github.com/basecamp/omarchy) shell's own (`Ui/Button.qml`,
+`Ui/ToggleSwitch.qml`, `Ui/PanelSlider.qml`, `Ui/TextField.qml`), MIT
+licensed, and read the same theme tokens from `colors.toml` and `shell.toml`.
 
 ## License
 

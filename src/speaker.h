@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QObject>
+#include <QVariantList>
 
 class Settings;
 
@@ -10,6 +11,8 @@ class Settings;
 class Speaker : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool hookInstalled READ hookInstalled NOTIFY hookChanged)
+    // The agents that run talkback-speak, as {id, name}, for their switches.
+    Q_PROPERTY(QVariantList hookedAgents READ hookedAgents NOTIFY hookChanged)
     Q_PROPERTY(QString error READ error NOTIFY errorChanged)
 
 public:
@@ -22,6 +25,7 @@ public:
 
     // Whether any agent runs talkback-speak.
     bool hookInstalled() const;
+    QVariantList hookedAgents() const;
     QString error() const { return m_error; }
 
     // Speaks with `settings` but the given engine and voice, so any voice can

@@ -3,6 +3,7 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QRegularExpression>
 #include <QSaveFile>
 #include <QStandardPaths>
 #include <cmath>
@@ -66,6 +67,20 @@ void Settings::resetNaturalness() {
     emit changed();
 }
 
+void Settings::setAgentEnabled(const QString &agent, bool enabled) {
+    // Agent names go into the file as keys, so only plain names get in.
+    static const QRegularExpression name("^[a-z0-9-]+$");
+    if (!name.match(agent).hasMatch() || agentEnabled(agent) == enabled)
+        return;
+    if (enabled)
+        m_mutedAgents.removeAll(agent);
+    else
+        m_mutedAgents.append(agent);
+    m_mutedAgents.sort();
+    save();
+    emit changed();
+}
+
 QVariantMap Settings::speakers() const {
     QVariantMap speakers;
     for (auto it = m_speakers.cbegin(); it != m_speakers.cend(); ++it)
@@ -98,9 +113,10 @@ void Settings::setNumber(double &field, double value, double low, double high) {
 
 void Settings::reload() {
     bool enabled = true;
-    QString engine = "piper", voice = defaultVoice, kokoroVoice = defaultKokoroVoice;
+    QString engine = "kokoro", voice = defaultVoice, kokoroVoice = defaultKokoroVoice;
     double speed = 1.0, expression = defaultExpression, rhythm = defaultRhythm, pause = defaultPause;
     QMap<QString, int> speakers;
+    QStringList mutedAgents;
     auto number = [](const QString &value, double &field, double low, double high) {
         bool ok = false;
         const double parsed = value.toDouble(&ok);
@@ -135,14 +151,18 @@ void Settings::reload() {
                 const int speaker = value.toInt(&ok);
                 if (ok && speaker > 0)
                     speakers.insert(key.mid(8), speaker);
+            } else if (key.startsWith("agent.") && key.size() > 6 && value == "false") {
+                mutedAgents.append(key.mid(6));
             }
         }
     }
 
+    mutedAgents.removeDuplicates();
+    mutedAgents.sort();
     watch();
     const auto differs = [](double a, double b) { return !qFuzzyCompare(a + 1, b + 1); };
     if (enabled != m_enabled || engine != m_engine || voice != m_voice || kokoroVoice != m_kokoroVoice || differs(speed, m_speed) || differs(expression, m_expression) ||
-        differs(rhythm, m_rhythm) || differs(pause, m_pause) || speakers != m_speakers) {
+        differs(rhythm, m_rhythm) || differs(pause, m_pause) || speakers != m_speakers || mutedAgents != m_mutedAgents) {
         m_enabled = enabled;
         m_engine = engine;
         m_voice = voice;
@@ -152,6 +172,7 @@ void Settings::reload() {
         m_rhythm = rhythm;
         m_pause = pause;
         m_speakers = speakers;
+        m_mutedAgents = mutedAgents;
         emit changed();
     }
 }
@@ -183,6 +204,8 @@ bool Settings::save() {
                            .arg(number(m_speed), number(m_expression), number(m_rhythm), number(m_pause));
     for (auto it = m_speakers.cbegin(); it != m_speakers.cend(); ++it)
         contents += QStringLiteral("speaker.%1=%2\n").arg(it.key()).arg(it.value());
+    for (const QString &agent : m_mutedAgents)
+        contents += QStringLiteral("agent.%1=false\n").arg(agent);
     file.write(contents.toUtf8());
     if (!file.commit()) {
         m_error = file.errorString();

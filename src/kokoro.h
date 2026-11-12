@@ -16,6 +16,7 @@ class Kokoro : public QObject {
     Q_PROPERTY(QString filter READ filter WRITE setFilter NOTIFY changed)
 
 public:
+    static QString progressText(const QString &line);
     explicit Kokoro(QObject *parent = nullptr);
     ~Kokoro() override;
 

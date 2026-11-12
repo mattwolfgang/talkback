@@ -1,0 +1,9 @@
+{
+  "tooltip.on": "Le risposte vocali sono attive. Fai clic per disattivarle, clic centrale per smettere di leggere, clic destro per scegliere gli agenti.",
+  "tooltip.off": "Le risposte vocali sono disattivate. Fai clic per attivarle, clic destro per scegliere gli agenti.",
+  "speech.label": "Risposte vocali",
+  "speech.description": "Leggi ad alta voce le risposte degli agenti di programmazione",
+  "agents.heading": "Agenti",
+  "agents.none": "Nessun agente di programmazione è ancora configurato. Esegui: %1",
+  "action.open": "Apri Talkback"
+}

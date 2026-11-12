@@ -1,0 +1,9 @@
+{
+  "tooltip.on": "朗读回复已开启。单击关闭，中键单击停止朗读，右键单击选择助手。",
+  "tooltip.off": "朗读回复已关闭。单击开启，右键单击选择助手。",
+  "speech.label": "朗读回复",
+  "speech.description": "朗读编程助手的回复",
+  "agents.heading": "助手",
+  "agents.none": "还没有设置任何编程助手。请运行：%1",
+  "action.open": "打开 Talkback"
+}

@@ -1,0 +1,9 @@
+{
+  "tooltip.on": "Majibu yanayosomwa yamewashwa. Bofya kuyazima, bofya katikati kuacha kusoma, bofya kulia kuchagua mawakala.",
+  "tooltip.off": "Majibu yanayosomwa yamezimwa. Bofya kuyawasha, bofya kulia kuchagua mawakala.",
+  "speech.label": "Majibu yanayosomwa",
+  "speech.description": "Soma kwa sauti majibu ya mawakala wa msimbo",
+  "agents.heading": "Mawakala",
+  "agents.none": "Bado hakuna wakala wa msimbo aliyewekwa. Endesha: %1",
+  "action.open": "Fungua Talkback"
+}

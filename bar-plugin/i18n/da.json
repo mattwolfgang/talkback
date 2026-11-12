@@ -1,0 +1,9 @@
+{
+  "tooltip.on": "Oplæste svar er slået til. Klik for at slå dem fra, midterklik for at stoppe oplæsning, højreklik for at vælge agenter.",
+  "tooltip.off": "Oplæste svar er slået fra. Klik for at slå dem til, højreklik for at vælge agenter.",
+  "speech.label": "Oplæste svar",
+  "speech.description": "Læs kodeagenters svar højt",
+  "agents.heading": "Agenter",
+  "agents.none": "Ingen kodeagent er sat op endnu. Kør: %1",
+  "action.open": "Åbn Talkback"
+}

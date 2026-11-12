@@ -1,0 +1,9 @@
+{
+  "tooltip.on": "Tá freagraí labhartha ar siúl. Cliceáil chun iad a mhúchadh, cliceáil sa lár chun stop a chur leis an léamh, deaschliceáil chun gníomhairí a roghnú.",
+  "tooltip.off": "Tá freagraí labhartha múchta. Cliceáil chun iad a chasadh air, deaschliceáil chun gníomhairí a roghnú.",
+  "speech.label": "Freagraí labhartha",
+  "speech.description": "Léigh os ard freagraí na ngníomhairí códaithe",
+  "agents.heading": "Gníomhairí",
+  "agents.none": "Níl aon ghníomhaire códaithe socraithe fós. Rith: %1",
+  "action.open": "Oscail Talkback"
+}

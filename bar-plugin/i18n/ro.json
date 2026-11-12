@@ -1,0 +1,9 @@
+{
+  "tooltip.on": "Răspunsurile rostite sunt pornite. Clic pentru a le opri, clic din mijloc pentru a opri citirea, clic dreapta pentru a alege agenții.",
+  "tooltip.off": "Răspunsurile rostite sunt oprite. Clic pentru a le porni, clic dreapta pentru a alege agenții.",
+  "speech.label": "Răspunsuri rostite",
+  "speech.description": "Citește cu voce tare răspunsurile agenților de programare",
+  "agents.heading": "Agenți",
+  "agents.none": "Niciun agent de programare nu este încă configurat. Rulează: %1",
+  "action.open": "Deschide Talkback"
+}
