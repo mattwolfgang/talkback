@@ -117,6 +117,7 @@
   "Stop speaking, from anywhere": "Voorlezen stoppen, overal",
   "Switch between Piper and Kokoro": "Wisselen tussen Piper en Kokoro",
   "Talkback can only bind keys in Omarchy's %1.": "Talkback kan alleen toetsen toewijzen in de %1 van Omarchy.",
+  "Talkback's bar icon was updated. Run “omarchy restart shell” to show the new one.": "Het Talkback-pictogram in de balk is bijgewerkt. Voer “omarchy restart shell” uit om het nieuwe te tonen.",
   "That isn't a key Hyprland can bind.": "Dat is geen toets die Hyprland kan toewijzen.",
   "The Omarchy shell isn't here, so there's no bar to add the icon to.": "De Omarchy-shell is hier niet, dus er is geen balk om het pictogram aan toe te voegen.",
   "The bar plugin is in %1, but the Omarchy shell didn't pick it up. Run: %2": "De balkplug-in staat in %1, maar de Omarchy-shell heeft hem niet opgepikt. Voer uit: %2",

@@ -117,6 +117,7 @@
   "Stop speaking, from anywhere": "Okumayı durdur, her yerden",
   "Switch between Piper and Kokoro": "Piper ve Kokoro arasında geçiş yap",
   "Talkback can only bind keys in Omarchy's %1.": "Talkback tuşları yalnızca Omarchy'nin %1 dosyasında atayabilir.",
+  "Talkback's bar icon was updated. Run “omarchy restart shell” to show the new one.": "Çubuktaki Talkback simgesi güncellendi. Yenisini göstermek için “omarchy restart shell” komutunu çalıştırın.",
   "That isn't a key Hyprland can bind.": "Bu, Hyprland'in atayabileceği bir tuş değil.",
   "The Omarchy shell isn't here, so there's no bar to add the icon to.": "Omarchy kabuğu burada değil, bu yüzden simgenin ekleneceği bir çubuk yok.",
   "The bar plugin is in %1, but the Omarchy shell didn't pick it up. Run: %2": "Çubuk eklentisi %1 içinde, ama Omarchy kabuğu onu algılamadı. Çalıştırın: %2",

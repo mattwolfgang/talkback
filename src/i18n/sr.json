@@ -121,6 +121,7 @@
   "Stop speaking, from anywhere": "Престани да читаш, било где",
   "Switch between Piper and Kokoro": "Пребаци између Piper и Kokoro",
   "Talkback can only bind keys in Omarchy's %1.": "Talkback може да додељује тастере само у Omarchy датотеци %1.",
+  "Talkback's bar icon was updated. Run “omarchy restart shell” to show the new one.": "Иконица Talkback-а на траци је ажурирана. Покрените “omarchy restart shell” да се прикаже нова.",
   "That isn't a key Hyprland can bind.": "То није тастер који Hyprland може да додели.",
   "The Omarchy shell isn't here, so there's no bar to add the icon to.": "Omarchy љуска није овде, па нема траке на коју би се додала икона.",
   "The bar plugin is in %1, but the Omarchy shell didn't pick it up. Run: %2": "Додатак за траку је у %1, али га Omarchy љуска није препознала. Покрените: %2",

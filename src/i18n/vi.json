@@ -113,6 +113,7 @@
   "Stop speaking, from anywhere": "Dừng đọc, từ bất cứ đâu",
   "Switch between Piper and Kokoro": "Chuyển giữa Piper và Kokoro",
   "Talkback can only bind keys in Omarchy's %1.": "Talkback chỉ có thể gán phím trong tệp %1 của Omarchy.",
+  "Talkback's bar icon was updated. Run “omarchy restart shell” to show the new one.": "Biểu tượng Talkback trên thanh đã được cập nhật. Chạy “omarchy restart shell” để hiển thị biểu tượng mới.",
   "That isn't a key Hyprland can bind.": "Đó không phải phím mà Hyprland có thể gán.",
   "The Omarchy shell isn't here, so there's no bar to add the icon to.": "Không có shell của Omarchy ở đây nên không có thanh để thêm biểu tượng.",
   "The bar plugin is in %1, but the Omarchy shell didn't pick it up. Run: %2": "Plugin thanh nằm ở %1 nhưng shell của Omarchy chưa nhận. Hãy chạy: %2",

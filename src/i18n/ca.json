@@ -121,6 +121,7 @@
   "Stop speaking, from anywhere": "Deixa de parlar, des de qualsevol lloc",
   "Switch between Piper and Kokoro": "Canvia entre Piper i Kokoro",
   "Talkback can only bind keys in Omarchy's %1.": "Talkback només pot assignar tecles al %1 d’Omarchy.",
+  "Talkback's bar icon was updated. Run “omarchy restart shell” to show the new one.": "S’ha actualitzat la icona de Talkback a la barra. Executa “omarchy restart shell” per mostrar la nova.",
   "That isn't a key Hyprland can bind.": "Aquesta no és una tecla que Hyprland pugui assignar.",
   "The Omarchy shell isn't here, so there's no bar to add the icon to.": "El shell d’Omarchy no hi és, així que no hi ha barra on posar la icona.",
   "The bar plugin is in %1, but the Omarchy shell didn't pick it up. Run: %2": "El connector de la barra és a %1, però el shell d’Omarchy no l’ha detectat. Executa: %2",

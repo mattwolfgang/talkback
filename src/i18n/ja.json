@@ -113,6 +113,7 @@
   "Stop speaking, from anywhere": "読み上げを停止 (どこからでも)",
   "Switch between Piper and Kokoro": "Piper と Kokoro を切り替え",
   "Talkback can only bind keys in Omarchy's %1.": "Talkback がキーを割り当てられるのは Omarchy の %1 だけです。",
+  "Talkback's bar icon was updated. Run “omarchy restart shell” to show the new one.": "バーの Talkback アイコンを更新しました。新しいアイコンを表示するには “omarchy restart shell” を実行してください。",
   "That isn't a key Hyprland can bind.": "Hyprland で割り当てられるキーではありません。",
   "The Omarchy shell isn't here, so there's no bar to add the icon to.": "Omarchy シェルがないため、アイコンを置くバーがありません。",
   "The bar plugin is in %1, but the Omarchy shell didn't pick it up. Run: %2": "バーのプラグインは %1 にありますが、Omarchy シェルが読み込みませんでした。実行してください: %2",

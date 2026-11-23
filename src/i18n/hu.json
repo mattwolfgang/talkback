@@ -117,6 +117,7 @@
   "Stop speaking, from anywhere": "Felolvasás leállítása, bárhonnan",
   "Switch between Piper and Kokoro": "Váltás a Piper és a Kokoro között",
   "Talkback can only bind keys in Omarchy's %1.": "A Talkback csak az Omarchy %1 fájljában tud billentyűket hozzárendelni.",
+  "Talkback's bar icon was updated. Run “omarchy restart shell” to show the new one.": "A Talkback ikonja a sávon frissült. Az új megjelenítéséhez futtasd ezt: “omarchy restart shell”.",
   "That isn't a key Hyprland can bind.": "Ezt a billentyűt a Hyprland nem tudja hozzárendelni.",
   "The Omarchy shell isn't here, so there's no bar to add the icon to.": "Az Omarchy shell nincs itt, így nincs sáv, amelyre az ikon kerülhetne.",
   "The bar plugin is in %1, but the Omarchy shell didn't pick it up. Run: %2": "A sávbővítmény itt van: %1, de az Omarchy shell nem észlelte. Futtasd: %2",

@@ -121,6 +121,7 @@
   "Stop speaking, from anywhere": "Oprește citirea, de oriunde",
   "Switch between Piper and Kokoro": "Comută între Piper și Kokoro",
   "Talkback can only bind keys in Omarchy's %1.": "Talkback poate atribui taste doar în fișierul %1 al Omarchy.",
+  "Talkback's bar icon was updated. Run “omarchy restart shell” to show the new one.": "Pictograma Talkback din bară a fost actualizată. Rulează “omarchy restart shell” ca să apară cea nouă.",
   "That isn't a key Hyprland can bind.": "Aceasta nu este o tastă pe care Hyprland o poate atribui.",
   "The Omarchy shell isn't here, so there's no bar to add the icon to.": "Shell-ul Omarchy nu este aici, așa că nu există bară pentru pictogramă.",
   "The bar plugin is in %1, but the Omarchy shell didn't pick it up. Run: %2": "Pluginul barei este în %1, dar shell-ul Omarchy nu l-a preluat. Rulează: %2",

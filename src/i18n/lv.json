@@ -121,6 +121,7 @@
   "Stop speaking, from anywhere": "Pārtraukt nolasīšanu, jebkur",
   "Switch between Piper and Kokoro": "Pārslēgties starp Piper un Kokoro",
   "Talkback can only bind keys in Omarchy's %1.": "Talkback var piešķirt taustiņus tikai Omarchy failā %1.",
+  "Talkback's bar icon was updated. Run “omarchy restart shell” to show the new one.": "Talkback ikona joslā ir atjaunināta. Palaidiet “omarchy restart shell”, lai parādītu jauno.",
   "That isn't a key Hyprland can bind.": "Šo taustiņu Hyprland nevar piešķirt.",
   "The Omarchy shell isn't here, so there's no bar to add the icon to.": "Omarchy čaulas šeit nav, tāpēc nav joslas, kur pievienot ikonu.",
   "The bar plugin is in %1, but the Omarchy shell didn't pick it up. Run: %2": "Joslas spraudnis ir mapē %1, bet Omarchy čaula to neatrada. Palaid: %2",

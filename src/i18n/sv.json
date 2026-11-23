@@ -117,6 +117,7 @@
   "Stop speaking, from anywhere": "Sluta läsa upp, överallt",
   "Switch between Piper and Kokoro": "Växla mellan Piper och Kokoro",
   "Talkback can only bind keys in Omarchy's %1.": "Talkback kan bara tilldela tangenter i Omarchys %1.",
+  "Talkback's bar icon was updated. Run “omarchy restart shell” to show the new one.": "Talkbacks ikon i fältet har uppdaterats. Kör “omarchy restart shell” för att visa den nya.",
   "That isn't a key Hyprland can bind.": "Det är ingen tangent som Hyprland kan tilldela.",
   "The Omarchy shell isn't here, so there's no bar to add the icon to.": "Omarchy-skalet finns inte här, så det finns inget fält att lägga ikonen i.",
   "The bar plugin is in %1, but the Omarchy shell didn't pick it up. Run: %2": "Fältets plugin ligger i %1, men Omarchy-skalet hittade det inte. Kör: %2",

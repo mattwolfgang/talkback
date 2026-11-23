@@ -3,6 +3,7 @@
 
 #include <QGuiApplication>
 #include <QIcon>
+#include <QProcess>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QQuickStyle>
@@ -41,7 +42,18 @@ int main(int argc, char *argv[]) {
     // A package update brings a new bar icon inside the binary. Whatever runs
     // Talkback first (the window, a key, or the icon itself) brings the copy
     // the Omarchy shell loads up to date; a removed icon stays removed.
-    BarPlugin().refresh();
+    // The shell sees the new files and reloads the plugin, but keeps drawing
+    // the old icon from Qt's cache until it restarts, so say how.
+    // Not when the icon is about to be taken away.
+    const bool removingBar = argc > 2 && QByteArray(argv[1]) == "bar" && QByteArray(argv[2]) == "remove";
+    bool barUpdated = false;
+    if (BarPlugin().refresh(&barUpdated) && barUpdated && !removingBar) {
+        const QString message = QCoreApplication::translate(
+            "Main", "Talkback's bar icon was updated. Run “omarchy restart shell” to show the new one.");
+        QProcess::startDetached("notify-send", {"--app-name=Talkback", "--icon=talkback", message});
+        if (!windowed)
+            fprintf(stderr, "%s\n", qPrintable(message));
+    }
 
     const int code = runCli(app.arguments());
     if (code >= 0)

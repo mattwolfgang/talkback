@@ -117,6 +117,7 @@
   "Stop speaking, from anywhere": "Stop oplæsning, overalt",
   "Switch between Piper and Kokoro": "Skift mellem Piper og Kokoro",
   "Talkback can only bind keys in Omarchy's %1.": "Talkback kan kun tildele taster i Omarchys %1.",
+  "Talkback's bar icon was updated. Run “omarchy restart shell” to show the new one.": "Talkbacks ikon i bjælken er opdateret. Kør “omarchy restart shell” for at vise det nye.",
   "That isn't a key Hyprland can bind.": "Det er ikke en tast, Hyprland kan tildele.",
   "The Omarchy shell isn't here, so there's no bar to add the icon to.": "Omarchy-skallen findes ikke her, så der er ingen bjælke at tilføje ikonet til.",
   "The bar plugin is in %1, but the Omarchy shell didn't pick it up. Run: %2": "Bjælke-pluginet ligger i %1, men Omarchy-skallen fandt det ikke. Kør: %2",

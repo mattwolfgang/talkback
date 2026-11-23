@@ -117,6 +117,7 @@
   "Stop speaking, from anywhere": "Vorlesen stoppen, überall",
   "Switch between Piper and Kokoro": "Zwischen Piper und Kokoro wechseln",
   "Talkback can only bind keys in Omarchy's %1.": "Talkback kann Tasten nur in Omarchys %1 belegen.",
+  "Talkback's bar icon was updated. Run “omarchy restart shell” to show the new one.": "Das Talkback-Symbol in der Leiste wurde aktualisiert. Führe “omarchy restart shell” aus, um das neue anzuzeigen.",
   "That isn't a key Hyprland can bind.": "Diese Taste kann Hyprland nicht belegen.",
   "The Omarchy shell isn't here, so there's no bar to add the icon to.": "Die Omarchy-Shell ist nicht vorhanden, also gibt es keine Leiste für das Symbol.",
   "The bar plugin is in %1, but the Omarchy shell didn't pick it up. Run: %2": "Das Leisten-Plugin liegt in %1, aber die Omarchy-Shell hat es nicht erkannt. Führe aus: %2",

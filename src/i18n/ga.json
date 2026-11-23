@@ -129,6 +129,7 @@
   "Stop speaking, from anywhere": "Stop ag léamh, ó áit ar bith",
   "Switch between Piper and Kokoro": "Athraigh idir Piper agus Kokoro",
   "Talkback can only bind keys in Omarchy's %1.": "Ní féidir le Talkback eochracha a shannadh ach i %1 Omarchy.",
+  "Talkback's bar icon was updated. Run “omarchy restart shell” to show the new one.": "Nuashonraíodh deilbhín Talkback sa bharra. Rith “omarchy restart shell” chun an ceann nua a thaispeáint.",
   "That isn't a key Hyprland can bind.": "Ní eochair í sin is féidir le Hyprland a shannadh.",
   "The Omarchy shell isn't here, so there's no bar to add the icon to.": "Níl blaosc Omarchy anseo, mar sin níl aon bharra ann don deilbhín.",
   "The bar plugin is in %1, but the Omarchy shell didn't pick it up. Run: %2": "Tá breiseán an bharra i %1, ach níor aithin blaosc Omarchy é. Rith: %2",

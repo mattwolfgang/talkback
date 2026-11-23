@@ -117,6 +117,7 @@
   "Stop speaking, from anywhere": "Ihinto ang pagbasa, mula kahit saan",
   "Switch between Piper and Kokoro": "Magpalit sa pagitan ng Piper at Kokoro",
   "Talkback can only bind keys in Omarchy's %1.": "Makakapagtakda lang ng key ang Talkback sa %1 ng Omarchy.",
+  "Talkback's bar icon was updated. Run “omarchy restart shell” to show the new one.": "Na-update ang icon ng Talkback sa bar. Patakbuhin ang “omarchy restart shell” para lumabas ang bago.",
   "That isn't a key Hyprland can bind.": "Hindi iyan key na maitatakda ng Hyprland.",
   "The Omarchy shell isn't here, so there's no bar to add the icon to.": "Wala rito ang Omarchy shell, kaya walang bar na lalagyan ng icon.",
   "The bar plugin is in %1, but the Omarchy shell didn't pick it up. Run: %2": "Nasa %1 ang bar plugin, pero hindi ito nakuha ng Omarchy shell. Patakbuhin: %2",

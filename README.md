@@ -112,7 +112,8 @@ Talkback. `talkback bar remove` takes it away, and
 `omarchy plugin disable io.github.mattwolfgang.talkback` hides it; installing
 again won't put it back. Its source is in `bar-plugin/`. After a package update,
 the first run of `talkback` (the window, a key, or a click on the icon) brings
-the installed copy up to date.
+the installed copy up to date. The bar keeps showing the old icon until the
+shell restarts, so a notification asks you to run `omarchy restart shell`.
 
 ## Install
 
@@ -129,6 +130,9 @@ sha256sum -c SHA256SUMS
 sudo pacman -U *.pkg.tar.zst
 talkback hook install
 ```
+
+After an update, run `omarchy restart shell` too, so the bar shows the new
+icon.
 
 The packages aren't signed, so pacman can't install them straight from their
 URLs. The commands above download them and check them against `SHA256SUMS`

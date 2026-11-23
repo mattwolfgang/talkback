@@ -121,6 +121,7 @@
   "Stop speaking, from anywhere": "Přestat číst, odkudkoli",
   "Switch between Piper and Kokoro": "Přepnout mezi Piper a Kokoro",
   "Talkback can only bind keys in Omarchy's %1.": "Talkback umí přiřazovat klávesy jen v souboru Omarchy %1.",
+  "Talkback's bar icon was updated. Run “omarchy restart shell” to show the new one.": "Ikona Talkbacku na liště byla aktualizována. Spusťte “omarchy restart shell”, aby se zobrazila nová.",
   "That isn't a key Hyprland can bind.": "Tuto klávesu Hyprland přiřadit neumí.",
   "The Omarchy shell isn't here, so there's no bar to add the icon to.": "Shell Omarchy tu není, takže není lišta, kam přidat ikonu.",
   "The bar plugin is in %1, but the Omarchy shell didn't pick it up. Run: %2": "Plugin lišty je v %1, ale shell Omarchy ho nenačetl. Spusťte: %2",

@@ -117,6 +117,7 @@
   "Stop speaking, from anywhere": "வாசிப்பதை நிறுத்து, எங்கிருந்தும்",
   "Switch between Piper and Kokoro": "Piper மற்றும் Kokoro இடையே மாறு",
   "Talkback can only bind keys in Omarchy's %1.": "Talkback ஆல் Omarchy இன் %1 கோப்பில் மட்டுமே விசைகளை அமைக்க முடியும்.",
+  "Talkback's bar icon was updated. Run “omarchy restart shell” to show the new one.": "பட்டியில் உள்ள Talkback ஐகான் புதுப்பிக்கப்பட்டது. புதியதைக் காட்ட “omarchy restart shell” ஐ இயக்கவும்.",
   "That isn't a key Hyprland can bind.": "இது Hyprland அமைக்கக்கூடிய விசை அல்ல.",
   "The Omarchy shell isn't here, so there's no bar to add the icon to.": "Omarchy ஷெல் இங்கே இல்லை, அதனால் ஐகானைச் சேர்க்கப் பட்டை இல்லை.",
   "The bar plugin is in %1, but the Omarchy shell didn't pick it up. Run: %2": "பட்டை செருகுநிரல் %1 இல் உள்ளது, ஆனால் Omarchy ஷெல் அதைக் கண்டறியவில்லை. இயக்கவும்: %2",

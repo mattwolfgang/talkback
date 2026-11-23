@@ -117,6 +117,7 @@
   "Stop speaking, from anywhere": "Acha kusoma, kutoka popote",
   "Switch between Piper and Kokoro": "Badilisha kati ya Piper na Kokoro",
   "Talkback can only bind keys in Omarchy's %1.": "Talkback inaweza kuweka vitufe katika %1 ya Omarchy pekee.",
+  "Talkback's bar icon was updated. Run “omarchy restart shell” to show the new one.": "Aikoni ya Talkback kwenye upau imesasishwa. Endesha “omarchy restart shell” ili kuonyesha mpya.",
   "That isn't a key Hyprland can bind.": "Hicho si kitufe ambacho Hyprland inaweza kuweka.",
   "The Omarchy shell isn't here, so there's no bar to add the icon to.": "Shell ya Omarchy haipo hapa, kwa hivyo hakuna upau wa kuweka aikoni.",
   "The bar plugin is in %1, but the Omarchy shell didn't pick it up. Run: %2": "Programu-jalizi ya upau iko katika %1, lakini shell ya Omarchy haikuitambua. Endesha: %2",
