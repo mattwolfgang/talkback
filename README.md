@@ -102,9 +102,9 @@ in your home directory. Each hook lives where that agent looks for it:
 Grok and Cursor can also run Claude Code's hooks. `talkback-speak` ignores
 those runs and uses each agent's own hook, so a reply is read only once.
 
-On Omarchy, `talkback hook install` also puts a speaker icon in the bar
-(skip it with `--no-bar`). It's always there: click it to turn spoken replies
-on or off, and middle-click to stop speaking. It dims while replies are off.
+On Omarchy, `talkback hook install` also puts an icon of a person talking in
+the bar (skip it with `--no-bar`). It's always there: click it to turn spoken
+replies on or off, and middle-click to stop speaking. It dims while replies are off.
 Right-click it for a popup with a switch for each agent that has a hook, so
 with Claude Code and Codex both running you can have only Codex talk back
 (`talkback agent claude off` does the same), and a button that opens

@@ -5,8 +5,9 @@ import qs.Commons
 import qs.Commons as Commons
 import qs.Ui
 
-// Talkback's icon in the Omarchy bar, always shown: a speaker while coding
-// agents' replies are read aloud and a muted one while they aren't. Click
+// Talkback's icon in the Omarchy bar, always shown: a person talking while
+// coding agents' replies are read aloud, struck through while they aren't
+// (a speaker would look like the bar's volume icon). Click
 // switches it, middle-click stops speaking, and right-click opens a popup to
 // silence agents one by one. Talkback installs this file (`talkback bar
 // install`); edits here are overwritten.
@@ -108,7 +109,7 @@ BarWidget {
     id: button
     anchors.fill: parent
     bar: root.bar
-    text: root.speaking ? "󰕾" : "󰖁"
+    text: root.speaking ? "󰗋" : "󰻔"
     dimmed: !root.speaking
     tooltipText: root.popupOpen ? ""
       : root.speaking
