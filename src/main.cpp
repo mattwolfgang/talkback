@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
 
     QGuiApplication app(argc, argv);
     app.setApplicationName("talkback");
-    app.setApplicationVersion("0.3.1");
+    app.setApplicationVersion("0.3.2");
 
     // Matches the window to talkback.desktop, so the compositor (Wayland
     // app_id) and the launcher pick up the installed icon.
